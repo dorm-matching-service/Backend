@@ -28,7 +28,9 @@ if (raw) {
 }
 
 if (!raw) {
-  throw new Error('환경변수 DATABASE_URL을 읽지 못했습니다. (.env 위치/이름/철자 확인)');
+  throw new Error(
+    '환경변수 DATABASE_URL을 읽지 못했습니다. (.env 위치/이름/철자 확인)',
+  );
 }
 
 const pool = new Pool({
