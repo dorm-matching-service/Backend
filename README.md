@@ -1,13 +1,15 @@
 # Backend
+
 기숙사 룸메 매칭 서비스 백엔드 레포지토리
 
 ## 기술스택
+
 - Node.js v20.17.0
 - TypeScript
 - Supabase (PostgreSQL)
 
-
 ## Runtime
+
 TypeScript 기반 서버 사이드 런타임 환경
 
 ## Web Framework
@@ -26,16 +28,14 @@ Connection
 
 Connection String (TCP) + Data API (HTTP) 병행 구성
 
-
-
 ## Security & Schema
 
 Use dedicated API schema for Data API 옵션 활성화
 
 API 전용 스키마(api)를 분리하여 개인정보 보호 강화
 
-
 ## 프로젝트 구조
+
 ```c
 KNOCK_BACKEND/
 ├── node_modules/              # 의존성 모듈
@@ -61,4 +61,3 @@ KNOCK_BACKEND/
 ├── tsconfig.json              # TypeScript 컴파일 설정
 └── tsconfig.build.json        # 빌드용 TypeScript 설정
 ```
-
