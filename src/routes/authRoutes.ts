@@ -7,8 +7,8 @@ import express, {
 import { z, ZodError } from 'zod';
 import prisma from '../db/prisma.js';
 import { generateNumericCode, hashCode, addMinutes } from '../utils/otp.js';
-import { sendOtpMail } from '../utils/mailer';
-import { signAccessToken } from '../utils/jwt';
+import { sendOtpMail } from '../utils/mailer.js';
+import { signAccessToken } from '../utils/jwt.js';
 
 const router = express.Router();
 

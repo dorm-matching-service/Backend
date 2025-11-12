@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { verifyAccessToken, type JwtDecoded } from '../utils/jwt';
+import { verifyAccessToken, type JwtDecoded } from '../utils/jwt.js';
 
 declare module 'express-serve-static-core' {
   interface Request {
