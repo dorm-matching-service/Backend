@@ -1,7 +1,5 @@
 {
   "compilerOptions": {
-    //TypeScript 6.x 버전의 deprecated 항목 경고를 무시
-    "ignoreDeprecations": "6.0",
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
