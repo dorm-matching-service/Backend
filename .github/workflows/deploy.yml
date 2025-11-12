@@ -1,4 +1,3 @@
-
 name: Deploy to EC2
 
 on:
@@ -13,6 +12,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ✅ (추가) Node.js 세팅
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ✅ (추가) 의존성 설치 + 빌드 (devDependencies 포함)
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build
+
       - name: Add SSH key
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -25,7 +37,6 @@ jobs:
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-     
           APP_DIR: /home/ubuntu/apps/backend
           BRANCH:  ${{ github.ref_name }}
           REPO:    git@github.com:${{ github.repository }}.git
@@ -46,18 +57,18 @@ jobs:
             echo "[REMOTE] APP_DIR: '"$APP_DIR"'  BRANCH: '"$BRANCH"'  REPO: '"$REPO"'" 
 
             mkdir -p "'"$APP_DIR"'"
-            cd "'"$APP_DIR"'"
+            cd "'"$APP_DIR"'"'
 
             if [ ! -d .git ]; then
               echo "[REMOTE] No .git -> cloning repo"
-              git clone "'"$REPO"'" .
+              git clone "'"$REPO"'" . 
             fi
 
             echo "[REMOTE] git remote -v"
             git remote -v || true
 
             echo "[REMOTE] Ensure origin exists"
-            git remote get-url origin >/dev/null 2>&1 || git remote add origin "'"$REPO"'" 
+            git remote get-url origin >/dev/null 2>&1 || git remote add origin "'"$REPO"'"
 
             echo "[REMOTE] Fetch origin"
             git fetch origin
@@ -70,7 +81,7 @@ jobs:
             fi
 
             echo "[REMOTE] Hard reset to origin/'"$BRANCH"'"
-            git reset --hard "origin/'"$BRANCH"'" 
+            git reset --hard "origin/'"$BRANCH"'"
 
             echo "[REMOTE] Submodules (if any)"
             git submodule update --init --recursive || true
