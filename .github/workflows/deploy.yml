@@ -24,7 +24,7 @@ jobs:
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          # ✅ 실제 서버 경로 지정
+     
           APP_DIR: /home/ubuntu/apps/backend
           BRANCH:  ${{ github.ref_name }}
           REPO:    git@github.com:${{ github.repository }}.git
