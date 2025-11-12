@@ -20,7 +20,7 @@ jobs:
       - name: Add host to known_hosts
         run: ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Deploy on EC2
+      - name: Deploy on EC2 (diagnostic)
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
@@ -28,33 +28,62 @@ jobs:
           BRANCH:   ${{ github.ref_name }}
           REPO:     git@github.com:${{ github.repository }}.git
         run: |
-          set -e
-          ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "set -euxo pipefail; \
-            echo '[INFO] APP_DIR:' \"$APP_DIR\"; \
-            echo '[INFO] BRANCH:' \"$BRANCH\"; \
-            mkdir -p \"$APP_DIR\"; \
-            cd \"$APP_DIR\"; \
-            if [ ! -d .git ]; then \
-              echo '[INFO] No .git found. Cloning...'; \
-              git clone \"$REPO\" .; \
-            fi; \
-            echo '[INFO] git status:'; git status || true; \
-            echo '[INFO] git remote -v:'; git remote -v || true; \
-            echo '[INFO] Ensure origin exists'; \
-            git remote get-url origin >/dev/null 2>&1 || git remote add origin \"$REPO\"; \
-            echo '[INFO] Fetch origin'; git fetch origin || (echo '[ERROR] git fetch failed'; exit 128); \
-            if git show-ref --verify --quiet refs/heads/\"$BRANCH\"; then \
-              git checkout \"$BRANCH\"; \
-            else \
-              echo '[INFO] Create local branch from origin'; \
-              git checkout -B \"$BRANCH\" \"origin/$BRANCH\"; \
-            fi; \
-            echo '[INFO] Hard reset to origin/$BRANCH'; \
-            git reset --hard \"origin/$BRANCH\"; \
-            echo '[INFO] Update submodules (if any)'; \
-            git submodule update --init --recursive || true; \
-            echo '[INFO] Ensure deploy.sh is executable'; \
-            chmod +x ./deploy.sh || true; \
-            echo '[INFO] Run deploy.sh'; \
-            ./deploy.sh \
-          "
+          set -euo pipefail
+          echo "[LOCAL] whoami: $(whoami)"
+          echo "[LOCAL] git version: $(git --version)"
+          echo "[LOCAL] ssh-agent keys:"
+          ssh-add -l || true
+
+          ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" '
+            set -euxo pipefail
+
+            echo "[REMOTE] whoami: $(whoami)"
+            echo "[REMOTE] hostname: $(hostname)"
+            echo "[REMOTE] pwd: $(pwd)"
+            echo "[REMOTE] git version: $(git --version || true)"
+            echo "[REMOTE] APP_DIR: '"$APP_DIR"'  BRANCH: '"$BRANCH"'  REPO: '"$REPO"'"
+
+            mkdir -p "'"$APP_DIR"'"
+            cd "'"$APP_DIR"'"
+
+            if [ ! -d .git ]; then
+              echo "[REMOTE] No .git -> cloning repo"
+              git clone "'"$REPO"'" .
+            fi
+
+            echo "[REMOTE] git remote -v"
+            git remote -v || true
+
+            echo "[REMOTE] Ensure origin exists"
+            git remote get-url origin >/dev/null 2>&1 || git remote add origin "'"$REPO"'"
+
+            echo "[REMOTE] Fetch origin"
+            git fetch origin
+
+            if git show-ref --verify --quiet "refs/heads/'"$BRANCH"'"; then
+              git checkout "'"$BRANCH"'"
+            else
+              echo "[REMOTE] Creating local branch from origin/'"$BRANCH"'"
+              git checkout -B "'"$BRANCH"'" "origin/'"$BRANCH"'"
+            fi
+
+            echo "[REMOTE] Hard reset to origin/'"$BRANCH"'""
+            git reset --hard "origin/'"$BRANCH"'" 
+
+            echo "[REMOTE] Submodules (if any)"
+            git submodule update --init --recursive || true
+
+            echo "[REMOTE] List files"
+            ls -al
+
+            if [ ! -f ./deploy.sh ]; then
+              echo "[ERROR] deploy.sh not found in $(pwd)"
+              exit 1
+            fi
+
+            echo "[REMOTE] Ensure deploy.sh is executable"
+            chmod +x ./deploy.sh || true
+
+            echo "[REMOTE] Run deploy.sh with bash -x"
+            bash -x ./deploy.sh
+          '
