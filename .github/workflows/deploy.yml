@@ -1,102 +1,50 @@
-name: Deploy to EC2
+- name: Deploy on EC2 (diagnostic)
+  env:
+    SSH_HOST: ${{ secrets.SSH_HOST }}
+    SSH_USER: ${{ secrets.SSH_USER }}
+    APP_DIR: /home/ubuntu/apps/backend
+    BRANCH: ${{ github.ref_name }}
+    REPO: git@github.com:${{ github.repository }}.git
+  run: |
+    set -euo pipefail
+    echo "[LOCAL] whoami: $(whoami)"
+    echo "[LOCAL] git version: $(git --version)"
 
-on:
-  push:
-    branches: ['main'] # main에 푸시될 때만 실행
+    ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" 'bash -se' <<'EOSSH'
+    set -euxo pipefail
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+    echo "[REMOTE] whoami: $(whoami)"
+    echo "[REMOTE] APP_DIR: $APP_DIR  BRANCH: $BRANCH  REPO: $REPO"
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    mkdir -p "$APP_DIR"
+    cd "$APP_DIR"
 
-      # ✅ (추가) Node.js 세팅
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+    if [ ! -d .git ]; then
+      echo "[REMOTE] No .git -> cloning repo"
+      git clone "$REPO" .
+    fi
 
-      # ✅ (추가) 의존성 설치 + 빌드 (devDependencies 포함)
-      - name: Install & Build
-        run: |
-          npm ci
-          npm run build
+    git remote set-url origin "$REPO"
+    git fetch --tags --force --prune origin
 
-      - name: Add SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.MY_PRIVATE_KEY }}
+    if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+      git checkout "$BRANCH"
+    else
+      echo "[REMOTE] Creating local branch from origin/$BRANCH"
+      git checkout -B "$BRANCH" "origin/$BRANCH"
+    fi
 
-      - name: Add host to known_hosts
-        run: ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+    echo "[REMOTE] Hard reset to origin/$BRANCH"
+    git reset --hard "origin/$BRANCH"
 
-      - name: Deploy on EC2 (diagnostic)
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          APP_DIR: /home/ubuntu/apps/backend
-          BRANCH:  ${{ github.ref_name }}
-          REPO:    git@github.com:${{ github.repository }}.git
-        run: |
-          set -euo pipefail
-          echo "[LOCAL] whoami: $(whoami)"
-          echo "[LOCAL] git version: $(git --version)"
-          echo "[LOCAL] ssh-agent keys:"
-          ssh-add -l || true
+    git submodule update --init --recursive || true
+    ls -al
 
-          ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" '
-            set -euxo pipefail
+    if [ ! -f ./deploy.sh ]; then
+      echo "[ERROR] deploy.sh not found in $(pwd)"
+      exit 1
+    fi
 
-            echo "[REMOTE] whoami: $(whoami)"
-            echo "[REMOTE] hostname: $(hostname)"
-            echo "[REMOTE] pwd: $(pwd)"
-            echo "[REMOTE] git version: $(git --version || true)"
-            echo "[REMOTE] APP_DIR: '"$APP_DIR"'  BRANCH: '"$BRANCH"'  REPO: '"$REPO"'" 
-
-            mkdir -p "'"$APP_DIR"'"
-            cd "'"$APP_DIR"'"'
-
-            if [ ! -d .git ]; then
-              echo "[REMOTE] No .git -> cloning repo"
-              git clone "'"$REPO"'" . 
-            fi
-
-            echo "[REMOTE] git remote -v"
-            git remote -v || true
-
-            echo "[REMOTE] Ensure origin exists"
-            git remote get-url origin >/dev/null 2>&1 || git remote add origin "'"$REPO"'"
-
-            echo "[REMOTE] Fetch origin"
-            git fetch origin
-
-            if git show-ref --verify --quiet "refs/heads/'"$BRANCH"'"; then
-              git checkout "'"$BRANCH"'"
-            else
-              echo "[REMOTE] Creating local branch from origin/'"$BRANCH"'"
-              git checkout -B "'"$BRANCH"'" "origin/'"$BRANCH"'"
-            fi
-
-            echo "[REMOTE] Hard reset to origin/'"$BRANCH"'"
-            git reset --hard "origin/'"$BRANCH"'"
-
-            echo "[REMOTE] Submodules (if any)"
-            git submodule update --init --recursive || true
-
-            echo "[REMOTE] List files"
-            ls -al
-
-            if [ ! -f ./deploy.sh ]; then
-              echo "[ERROR] deploy.sh not found in $(pwd)"
-              exit 1
-            fi
-
-            echo "[REMOTE] Ensure deploy.sh is executable"
-            chmod +x ./deploy.sh || true
-
-            echo "[REMOTE] Run deploy.sh with bash -x"
-            bash -x ./deploy.sh
-          '
+    chmod +x ./deploy.sh || true
+    bash -x ./deploy.sh
+    EOSSH
