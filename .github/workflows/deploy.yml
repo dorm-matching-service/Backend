@@ -6,7 +6,7 @@
     BRANCH: ${{ github.ref_name }}
     REPO: git@github.com:${{ github.repository }}.git
   run: |
-    set -euo pipefail
+    set -ux
     echo "[LOCAL] whoami: $(whoami)"
     echo "[LOCAL] git version: $(git --version)"
 
