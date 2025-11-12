@@ -24,9 +24,10 @@ jobs:
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          APP_DIR:  ${{ secrets.APP_DIR }}
-          BRANCH:   ${{ github.ref_name }}
-          REPO:     git@github.com:${{ github.repository }}.git
+          # ✅ 실제 서버 경로 지정
+          APP_DIR: /home/ubuntu/apps/backend
+          BRANCH:  ${{ github.ref_name }}
+          REPO:    git@github.com:${{ github.repository }}.git
         run: |
           set -euo pipefail
           echo "[LOCAL] whoami: $(whoami)"
@@ -41,7 +42,7 @@ jobs:
             echo "[REMOTE] hostname: $(hostname)"
             echo "[REMOTE] pwd: $(pwd)"
             echo "[REMOTE] git version: $(git --version || true)"
-            echo "[REMOTE] APP_DIR: '"$APP_DIR"'  BRANCH: '"$BRANCH"'  REPO: '"$REPO"'"
+            echo "[REMOTE] APP_DIR: '"$APP_DIR"'  BRANCH: '"$BRANCH"'  REPO: '"$REPO"'" 
 
             mkdir -p "'"$APP_DIR"'"
             cd "'"$APP_DIR"'"
@@ -55,7 +56,7 @@ jobs:
             git remote -v || true
 
             echo "[REMOTE] Ensure origin exists"
-            git remote get-url origin >/dev/null 2>&1 || git remote add origin "'"$REPO"'"
+            git remote get-url origin >/dev/null 2>&1 || git remote add origin "'"$REPO"'" 
 
             echo "[REMOTE] Fetch origin"
             git fetch origin
@@ -67,7 +68,7 @@ jobs:
               git checkout -B "'"$BRANCH"'" "origin/'"$BRANCH"'"
             fi
 
-            echo "[REMOTE] Hard reset to origin/'"$BRANCH"'""
+            echo "[REMOTE] Hard reset to origin/'"$BRANCH"'"
             git reset --hard "origin/'"$BRANCH"'" 
 
             echo "[REMOTE] Submodules (if any)"
