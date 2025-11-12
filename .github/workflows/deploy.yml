@@ -2,7 +2,7 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: ['main']
+    branches: ['main'] # main에 푸시될 때만 실행
 
 jobs:
   deploy:
@@ -20,7 +20,7 @@ jobs:
       - name: Add host to known_hosts
         run: ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Deploy on EC2 (ultra-diagnostic)
+      - name: Deploy on EC2 (diagnostic)
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
@@ -34,69 +34,56 @@ jobs:
           echo "[LOCAL] ssh-agent keys:"
           ssh-add -l || true
 
-          echo "[LOCAL] Starting SSH to $SSH_USER@$SSH_HOST"
-          # -vvv: verbose, -tt: force TTY so we see prompts/errors, -o BatchMode=yes: fail fast on auth issues
-          ssh -vvv -tt -o BatchMode=yes -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" bash -s <<'REMOTE'
-          set -euxo pipefail
+          ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" '
+            set -euxo pipefail
 
-          echo "[REMOTE] whoami: $(whoami)"
-          echo "[REMOTE] hostname: $(hostname)"
-          echo "[REMOTE] pwd: $(pwd)"
-          echo "[REMOTE] git version: $(git --version || true)"
-          echo "[REMOTE] APP_DIR: ${APP_DIR:-<unset>}  BRANCH: ${BRANCH:-<unset>}  REPO: ${REPO:-<unset>}"
+            echo "[REMOTE] whoami: $(whoami)"
+            echo "[REMOTE] hostname: $(hostname)"
+            echo "[REMOTE] pwd: $(pwd)"
+            echo "[REMOTE] git version: $(git --version || true)"
+            echo "[REMOTE] APP_DIR: '"$APP_DIR"'  BRANCH: '"$BRANCH"'  REPO: '"$REPO"'"
 
-          # 환경변수 전달 확인
-          if [ -z "${APP_DIR:-}" ] || [ -z "${BRANCH:-}" ] || [ -z "${REPO:-}" ]; then
-            echo "[ERROR] Missing required env (APP_DIR/BRANCH/REPO)"; exit 2;
-          fi
+            mkdir -p "'"$APP_DIR"'"
+            cd "'"$APP_DIR"'"
 
-          mkdir -p "$APP_DIR"
-          cd "$APP_DIR"
+            if [ ! -d .git ]; then
+              echo "[REMOTE] No .git -> cloning repo"
+              git clone "'"$REPO"'" .
+            fi
 
-          if [ ! -d .git ]; then
-            echo "[REMOTE] No .git -> cloning repo $REPO"
-            git clone "$REPO" .
-          fi
+            echo "[REMOTE] git remote -v"
+            git remote -v || true
 
-          echo "[REMOTE] git remote -v"
-          git remote -v || true
+            echo "[REMOTE] Ensure origin exists"
+            git remote get-url origin >/dev/null 2>&1 || git remote add origin "'"$REPO"'"
 
-          echo "[REMOTE] Ensuring origin exists"
-          git remote get-url origin >/dev/null 2>&1 || git remote add origin "$REPO"
+            echo "[REMOTE] Fetch origin"
+            git fetch origin
 
-          echo "[REMOTE] Testing GitHub auth from server (ssh -T git@github.com)"
-          ssh -T git@github.com || true
+            if git show-ref --verify --quiet "refs/heads/'"$BRANCH"'"; then
+              git checkout "'"$BRANCH"'"
+            else
+              echo "[REMOTE] Creating local branch from origin/'"$BRANCH"'"
+              git checkout -B "'"$BRANCH"'" "origin/'"$BRANCH"'"
+            fi
 
-          echo "[REMOTE] Fetch origin"
-          git fetch origin
+            echo "[REMOTE] Hard reset to origin/'"$BRANCH"'""
+            git reset --hard "origin/'"$BRANCH"'" 
 
-          if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
-            git checkout "$BRANCH"
-          else
-            echo "[REMOTE] Creating local branch from origin/$BRANCH"
-            git checkout -B "$BRANCH" "origin/$BRANCH"
-          fi
+            echo "[REMOTE] Submodules (if any)"
+            git submodule update --init --recursive || true
 
-          echo "[REMOTE] Hard reset to origin/$BRANCH"
-          git reset --hard "origin/$BRANCH"
+            echo "[REMOTE] List files"
+            ls -al
 
-          echo "[REMOTE] Submodules (if any)"
-          git submodule update --init --recursive || true
+            if [ ! -f ./deploy.sh ]; then
+              echo "[ERROR] deploy.sh not found in $(pwd)"
+              exit 1
+            fi
 
-          echo "[REMOTE] List files"
-          ls -al
+            echo "[REMOTE] Ensure deploy.sh is executable"
+            chmod +x ./deploy.sh || true
 
-          if [ ! -f ./deploy.sh ]; then
-            echo "[ERROR] deploy.sh not found in $(pwd)"
-            exit 3
-          fi
-
-          echo "[REMOTE] Ensure deploy.sh is executable"
-          chmod +x ./deploy.sh || true
-
-          echo "[REMOTE] Run deploy.sh with bash -x"
-          bash -x ./deploy.sh
-          REMOTE
-          rc=$?
-          echo "[LOCAL] SSH finished with exit code: $rc"
-          exit $rc
+            echo "[REMOTE] Run deploy.sh with bash -x"
+            bash -x ./deploy.sh
+          '
