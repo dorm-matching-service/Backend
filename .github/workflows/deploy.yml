@@ -47,56 +47,56 @@ jobs:
           echo "[LOCAL] ssh-agent keys:"
           ssh-add -l || true
 
-          ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" '
-            set -euxo pipefail
+          ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" bash -se <<'EOSSH'
+          set -euxo pipefail
 
-            echo "[REMOTE] whoami: $(whoami)"
-            echo "[REMOTE] hostname: $(hostname)"
-            echo "[REMOTE] pwd: $(pwd)"
-            echo "[REMOTE] git version: $(git --version || true)"
-            echo "[REMOTE] APP_DIR: '"$APP_DIR"'  BRANCH: '"$BRANCH"'  REPO: '"$REPO"'" 
+          echo "[REMOTE] whoami: $(whoami)"
+          echo "[REMOTE] hostname: $(hostname)"
+          echo "[REMOTE] pwd: $(pwd)"
+          echo "[REMOTE] git version: $(git --version || true)"
+          echo "[REMOTE] APP_DIR: '"$APP_DIR"'  BRANCH: '"$BRANCH"'  REPO: '"$REPO"'" 
 
-            mkdir -p "'"$APP_DIR"'"
-            cd "'"$APP_DIR"'"'
+          mkdir -p "'"$APP_DIR"'"
+          cd "'"$APP_DIR"'"'
 
-            if [ ! -d .git ]; then
-              echo "[REMOTE] No .git -> cloning repo"
-              git clone "'"$REPO"'" .
-            fi
+          if [ ! -d .git ]; then
+            echo "[REMOTE] No .git -> cloning repo"
+            git clone "'"$REPO"'" .
+          fi
 
-            echo "[REMOTE] git remote -v"
-            git remote -v || true
+          echo "[REMOTE] git remote -v"
+          git remote -v || true
 
-            echo "[REMOTE] Ensure origin exists"
-            git remote get-url origin >/dev/null 2>&1 || git remote add origin "'"$REPO"'"
+          echo "[REMOTE] Ensure origin exists"
+          git remote get-url origin >/dev/null 2>&1 || git remote add origin "'"$REPO"'"
 
-            echo "[REMOTE] Fetch origin"
-            git fetch origin
+          echo "[REMOTE] Fetch origin"
+          git fetch origin
 
-            if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
-              git checkout "$BRANCH"
-            else
-              echo "[REMOTE] Creating local branch from origin/$BRANCH"
-              git checkout -B "$BRANCH" "origin/$BRANCH"
-            fi
+          if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
+            git checkout "$BRANCH"
+          else
+            echo "[REMOTE] Creating local branch from origin/$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+          fi
 
-            echo "[REMOTE] Hard reset to origin/$BRANCH"
-            git reset --hard "origin/$BRANCH"
+          echo "[REMOTE] Hard reset to origin/$BRANCH"
+          git reset --hard "origin/$BRANCH"
 
-            echo "[REMOTE] Submodules (if any)"
-            git submodule update --init --recursive || true
+          echo "[REMOTE] Submodules (if any)"
+          git submodule update --init --recursive || true
 
-            echo "[REMOTE] List files"
-            ls -al
+          echo "[REMOTE] List files"
+          ls -al
 
-            if [ ! -f ./deploy.sh ]; then
-              echo "[ERROR] deploy.sh not found in $(pwd)"
-              exit 1
-            fi
+          if [ ! -f ./deploy.sh ]; then
+            echo "[ERROR] deploy.sh not found in $(pwd)"
+            exit 1
+          fi
 
-            echo "[REMOTE] Ensure deploy.sh is executable"
-            chmod +x ./deploy.sh || true
+          echo "[REMOTE] Ensure deploy.sh is executable"
+          chmod +x ./deploy.sh || true
 
-            echo "[REMOTE] Run deploy.sh with bash -x"
-            bash -x ./deploy.sh
+          echo "[REMOTE] Run deploy.sh with bash -x"
+          bash -x ./deploy.sh
           '
