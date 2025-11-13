@@ -103,4 +103,4 @@ jobs:
 
           echo "[REMOTE] Run deploy.sh with bash -x"
           bash -x ./deploy.sh
-EOSSH    
+          EOSSH    
