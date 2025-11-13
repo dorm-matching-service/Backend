@@ -55,7 +55,7 @@ jobs:
           echo "[REMOTE] hostname: $(hostname)"
           echo "[REMOTE] pwd: $(pwd)"
           echo "[REMOTE] git version: $(git --version || true)"
-          echo "[REMOTE] APP_DIR: '$APP_DIR'  BRANCH: '$BRANCH'  REPO: '$REPO'"
+          echo "[REMOTE] APP_DIR: $APP_DIR  BRANCH: $BRANCH  REPO: $REPO"
 
           mkdir -p "$APP_DIR"
           cd "$APP_DIR"
@@ -103,5 +103,5 @@ jobs:
 
           echo "[REMOTE] Run deploy.sh with bash -x"
           bash -x ./deploy.sh
-          EOSSH
+EOSSH
           
