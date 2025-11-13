@@ -102,6 +102,6 @@ jobs:
           echo "[REMOTE] Ensure deploy.sh is executable"
           chmod +x ./deploy.sh || true
 
-          echo "[REMOTE] Run deploy.sh with bash -x"
+          echo "[REMOTE] Run deploy.sh with bash -x"          
           bash -x ./deploy.sh
-          EOSSH    
+EOSSH
