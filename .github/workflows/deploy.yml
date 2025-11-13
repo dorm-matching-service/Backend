@@ -17,10 +17,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       # (추가) 의존성 설치 + 빌드 (devDependencies 포함)
       - name: Install & Build
+        env:
+          NODE_ENV: development   # ← 이 줄 추가!
         run: |
           npm ci
           npm run build
