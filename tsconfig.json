@@ -14,7 +14,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "types": ["node"],
-    "baseUrl": "./src",
     "verbatimModuleSyntax": true
   },
   "include": ["src/**/*.ts"],
