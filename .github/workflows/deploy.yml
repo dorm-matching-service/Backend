@@ -48,31 +48,34 @@ jobs:
           ssh-add -l || true
 
           ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" \
-            APP_DIR="$APP_DIR" BRANCH="$BRANCH" REPO="$REPO" bash -se <<'EOSSH'
+          APP_DIR="$APP_DIR" BRANCH="$BRANCH" REPO="$REPO" bash -se <<'EOSSH
           set -euxo pipefail
 
           echo "[REMOTE] whoami: $(whoami)"
           echo "[REMOTE] hostname: $(hostname)"
           echo "[REMOTE] pwd: $(pwd)"
           echo "[REMOTE] git version: $(git --version || true)"
-          echo "[REMOTE] APP_DIR: '"$APP_DIR"'  BRANCH: '"$BRANCH"'  REPO: '"$REPO"'" 
+          echo "[REMOTE] APP_DIR: '$APP_DIR'  BRANCH: '$BRANCH'  REPO: '$REPO'"
 
-          mkdir -p "'"$APP_DIR"'"
-          cd "'"$APP_DIR"'"'
+          mkdir -p "$APP_DIR"
+          cd "$APP_DIR"
 
           if [ ! -d .git ]; then
-            echo "[REMOTE] No .git -> cloning repo"
-            git clone "'"$REPO"'" .
+          echo "[REMOTE] No .git -> cloning repo"
+          git clone "$REPO" .
           fi
 
           echo "[REMOTE] git remote -v"
           git remote -v || true
 
           echo "[REMOTE] Ensure origin exists"
-          git remote get-url origin >/dev/null 2>&1 || git remote add origin "'"$REPO"'"
+          git remote get-url origin >/dev/null 2>&1 || git remote add origin "$REPO"
 
           echo "[REMOTE] Fetch origin"
           git fetch origin
+
+
+
 
           if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
             git checkout "$BRANCH"
@@ -100,4 +103,5 @@ jobs:
 
           echo "[REMOTE] Run deploy.sh with bash -x"
           bash -x ./deploy.sh
-          '
+          EOSSH
+          
