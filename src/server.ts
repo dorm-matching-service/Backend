@@ -91,14 +91,15 @@ async function startServer() {
     await prisma.$connect();
     console.log('🟢 Prisma 및 DB 연결 성공!');
 
-    app.listen(PORT, () => {
+    // 🔥 핵심 수정 → '0.0.0.0'으로 바인딩
+    app.listen(PORT, '0.0.0.0', () => {
       console.log('✅ 서버 실행 성공!');
-      console.log(`🚀 Server running at http://localhost:${PORT}`);
+      console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
       console.log('🔗 OTP endpoints:');
-      console.log(`   POST http://localhost:${PORT}/auth/email/start`);
-      console.log(`   POST http://localhost:${PORT}/auth/email/verify`);
+      console.log(`   POST http://0.0.0.0:${PORT}/auth/email/start`);
+      console.log(`   POST http://0.0.0.0:${PORT}/auth/email/verify`);
       console.log('🔗 User endpoints (JWT 보호):');
-      console.log(`   GET  http://localhost:${PORT}/users/me`);
+      console.log(`   GET  http://0.0.0.0:${PORT}/users/me`);
     });
   } catch (err) {
     console.error('🔴 Prisma 연결 실패:', err);
