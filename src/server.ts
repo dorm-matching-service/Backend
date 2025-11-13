@@ -44,6 +44,7 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'], // ✅ 여기가 올바른 위치
   }),
 );
+
 // ✅ 기본 미들웨어
 app.use(express.json());
 app.use(cookieParser());
@@ -63,10 +64,12 @@ app.use('/auth', authRoutes);
 app.use('/users', userRoutes); // ✅ 분리한 사용자 라우트 등록
 
 // ✅ 헬스 체크
-app.get('/health', (_req, res) => res.json({ ok: true }));
+app.get('/health', (_req: Request, res: Response) => {
+  return res.json({ ok: true });
+});
 
 // ✅ 404 핸들러 (라우트 미스)
-app.use((req, res) => {
+app.use((req: Request, res: Response) => {
   res
     .status(404)
     .json({ message: `Route not found: ${req.method} ${req.originalUrl}` });
