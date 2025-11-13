@@ -48,7 +48,7 @@ jobs:
           ssh-add -l || true
 
           ssh -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" \
-          APP_DIR="$APP_DIR" BRANCH="$BRANCH" REPO="$REPO" bash -se <<'EOSSH
+          APP_DIR="$APP_DIR" BRANCH="$BRANCH" REPO="$REPO" bash -se <<'EOSSH'
           set -euxo pipefail
 
           echo "[REMOTE] whoami: $(whoami)"
@@ -103,5 +103,4 @@ jobs:
 
           echo "[REMOTE] Run deploy.sh with bash -x"
           bash -x ./deploy.sh
-EOSSH
-          
+EOSSH    
