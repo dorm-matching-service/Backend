@@ -40,6 +40,7 @@ router.post(
       return res.status(200).json({
         ok: true,
         message: '인증 코드가 이메일로 전송되었습니다.',
+        expiresAt,
       });
     } catch (err) {
       if (err instanceof ZodError) {
@@ -116,38 +117,11 @@ router.post(
           data: { last_login: new Date(), email_verified: true },
         });
       }
-      // ✅ JWT 발급 (OTP 로그인은 구글 sub가 없으므로 sub에 우리 user.id를 넣는 걸 권장)
-      const accessToken = signAccessToken({
-        uid: user.id,
-        email: user.email,
-      });
 
-      // ✅ 개발 환경에서만 콘솔에 토큰 출력
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[DEBUG] Issued access token:', accessToken);
-        // Postman에서 보기 편하게 헤더로도 내려주기 (개발 전용)
-        res.setHeader('x-debug-token', accessToken);
-      }
-
-      // ✅ httpOnly 쿠키로 세팅
-      res.cookie('access_token', accessToken, {
-        httpOnly: true,
-        secure: (process.env.COOKIE_SECURE ?? 'false') === 'true',
-        sameSite: 'lax',
-        maxAge: 1000 * 60 * 60, // JWT_EXPIRES_IN=1h 기준
-        path: '/',
-      });
-
-      // ✅ 응답 바디에도 토큰 포함(모바일/다중클라이언트 지원용)
       return res.json({
-        message: isNew ? '회원가입 및 로그인 성공' : '로그인 성공',
-        token: accessToken,
-        user: {
-          id: user.id,
-          email: user.email,
-          email_verified: user.email_verified,
-          last_login: user.last_login,
-        },
+        ok: true,
+        message: '인증 성공',
+        email: user.email,
       });
     } catch (err) {
       if (err instanceof ZodError) {
