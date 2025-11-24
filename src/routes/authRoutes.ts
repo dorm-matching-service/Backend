@@ -59,14 +59,13 @@ const verifySchema = z.object({
     .email()
     .transform((e) => e.trim().toLowerCase()),
   code: z.string().min(4).max(8),
-  name: z.string().min(1).max(100).optional(),
 });
 
 router.post(
   '/email/verify',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, code, name } = verifySchema.parse(req.body);
+      const { email, code } = verifySchema.parse(req.body);
 
       const record = await prisma.verificationCode.findFirst({
         where: {
@@ -106,7 +105,6 @@ router.post(
         user = await prisma.user.create({
           data: {
             email,
-            name: name ?? email.split('@')[0],
             email_verified: true,
             created_at: new Date(),
             last_login: new Date(),
@@ -147,7 +145,6 @@ router.post(
         user: {
           id: user.id,
           email: user.email,
-          name: user.name,
           email_verified: user.email_verified,
           last_login: user.last_login,
         },
