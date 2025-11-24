@@ -37,7 +37,10 @@ router.post(
 
       await sendOtpMail(email, code);
 
-      return res.status(204).send();
+      return res.status(200).json({
+        ok: true,
+        message: '인증 코드가 이메일로 전송되었습니다.',
+      });
     } catch (err) {
       if (err instanceof ZodError) {
         return res
