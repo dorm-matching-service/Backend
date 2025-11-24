@@ -8,7 +8,7 @@ import { z, ZodError } from 'zod';
 import prisma from '../db/prisma.js';
 import { generateNumericCode, hashCode, addMinutes } from '../utils/otp.js';
 import { sendOtpMail } from '../utils/mailer.js';
-import { signAccessToken } from '../utils/jwt.js';
+
 
 const router = express.Router();
 
@@ -40,7 +40,7 @@ router.post(
       return res.status(200).json({
         ok: true,
         message: '인증 코드가 이메일로 전송되었습니다.',
-        expiresAt,
+        expiresAt: expiresAt.toISOString(),
       });
     } catch (err) {
       if (err instanceof ZodError) {
