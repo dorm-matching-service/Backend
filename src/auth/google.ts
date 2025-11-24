@@ -3,7 +3,6 @@ import prisma from '../db/prisma.js';
 
 interface UpsertGoogleUserParams {
   email: string;
-  name: string;
   emailVerified: boolean;
 }
 
