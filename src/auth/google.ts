@@ -32,6 +32,5 @@ export async function upsertGoogleUser({
       last_login: new Date(),
     },
   });
-
   return user;
 }
