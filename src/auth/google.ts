@@ -14,7 +14,6 @@ interface UpsertGoogleUserParams {
 
 export async function upsertGoogleUser({
   email,
-  name,
   emailVerified,
 }: UpsertGoogleUserParams): Promise<
   Awaited<ReturnType<typeof prisma.user.upsert>>
@@ -23,18 +22,15 @@ export async function upsertGoogleUser({
     where: { email },
     update: {
       email,
-      name,
       email_verified: emailVerified,
       last_login: new Date(),
     },
     create: {
       email,
-      name,
       email_verified: emailVerified,
       created_at: new Date(),
       last_login: new Date(),
     },
   });
-
   return user;
 }
