@@ -9,7 +9,6 @@ import prisma from '../db/prisma.js';
 import { generateNumericCode, hashCode, addMinutes } from '../utils/otp.js';
 import { sendOtpMail } from '../utils/mailer.js';
 
-
 const router = express.Router();
 
 /** 1) 코드 발송 */
