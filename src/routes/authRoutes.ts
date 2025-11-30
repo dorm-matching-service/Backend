@@ -8,6 +8,7 @@ import { z, ZodError } from 'zod';
 import prisma from '../db/prisma.js';
 import { generateNumericCode, hashCode, addMinutes } from '../utils/otp.js';
 import { sendOtpMail } from '../utils/mailer.js';
+import { signAccessToken } from '../utils/jwt.js';
 
 const router = express.Router();
 
@@ -117,10 +118,32 @@ router.post(
         });
       }
 
+      // JWT 발급
+      const accessToken = signAccessToken({
+        uid: user.id,
+        email: user.email,
+      });
+
+      // 개발 환경 디버그용
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[DEBUG] Issued access token:', accessToken);
+        res.setHeader('x-debug-token', accessToken);
+      }
+
+      // 쿠키로 토큰 설정
+      res.cookie('access_token', accessToken, {
+        httpOnly: true,
+        secure: (process.env.COOKIE_SECURE ?? 'false') === 'true',
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60, // 1시간
+        path: '/',
+      });
+
       return res.json({
         ok: true,
         message: '인증 성공',
         email: user.email,
+        isNew,
       });
     } catch (err) {
       if (err instanceof ZodError) {
