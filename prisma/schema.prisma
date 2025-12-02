@@ -44,15 +44,15 @@ model Session {
 
 
 model VerificationCode {
-  id          String    @id @default(uuid())
-  email       String    @db.VarChar(255)
-  codeHash    String    @map("code_hash") @db.VarChar(255)
-  expiresAt   DateTime  @map("expires_at")
-  consumedAt  DateTime? @map("consumed_at")
-  attempts    Int       @default(0)
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id           String    @id @default(uuid())
+  email        String    @db.VarChar(255)
+  code_hash    String    @db.VarChar(255)
+  expires_at   DateTime
+  consumed_at  DateTime?
+  attempts     Int       @default(0)
+  created_at   DateTime  @default(now())
 
-  @@index([email, expiresAt])
+  @@index([email, expires_at])
   @@schema("public")
-
+  @@map("VerificationCode")
 }
