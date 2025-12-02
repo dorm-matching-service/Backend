@@ -28,12 +28,18 @@ router.post(
       const { email } = startSchema.parse(req.body);
 
       const code = generateNumericCode(6);
-      const codeHash = hashCode(code);
+      const code_hash = hashCode(code);
       const ttlMin = Number(process.env.OTP_CODE_TTL_MIN ?? 10);
-      const expiresAt = addMinutes(new Date(), ttlMin);
+      const expires_at = addMinutes(new Date(), ttlMin);
 
+      // snake_case 맞춤
       await prisma.verificationCode.create({
-        data: { email, codeHash, expiresAt },
+        data: {
+          email,
+          code_hash,
+          expires_at,
+          created_at: new Date(),
+        },
       });
 
       await sendOtpMail(email, code);
@@ -41,7 +47,7 @@ router.post(
       return res.status(200).json({
         ok: true,
         message: '인증 코드가 이메일로 전송되었습니다.',
-        expiresAt: expiresAt.toISOString(),
+        expiresAt: expires_at.toISOString(),
       });
     } catch (err) {
       if (err instanceof ZodError) {
@@ -54,7 +60,7 @@ router.post(
   },
 );
 
-/** 2) 코드 검증 (가입 or 로그인) */
+/** 2) 코드 검증 */
 const verifySchema = z.object({
   email: z
     .string()
@@ -72,11 +78,12 @@ router.post(
       const record = await prisma.verificationCode.findFirst({
         where: {
           email,
-          consumedAt: null,
-          expiresAt: { gt: new Date() },
+          consumed_at: null,
+          expires_at: { gt: new Date() },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
       });
+
       if (!record)
         return res
           .status(400)
@@ -86,13 +93,13 @@ router.post(
         return res.status(429).json({ message: '시도 횟수를 초과했습니다.' });
       }
 
-      const ok = record.codeHash === hashCode(code);
+      const ok = record.code_hash === hashCode(code);
 
       await prisma.verificationCode.update({
         where: { id: record.id },
         data: {
           attempts: { increment: 1 },
-          consumedAt: ok ? new Date() : null,
+          consumed_at: ok ? new Date() : null,
         },
       });
 
@@ -131,12 +138,12 @@ router.post(
         res.setHeader('x-debug-token', accessToken);
       }
 
-      // 쿠키로 토큰 설정
+      // 쿠키 설정
       res.cookie('access_token', accessToken, {
         httpOnly: true,
         secure: (process.env.COOKIE_SECURE ?? 'false') === 'true',
         sameSite: 'lax',
-        maxAge: 1000 * 60 * 60, // 1시간
+        maxAge: 1000 * 60 * 60,
         path: '/',
       });
 
@@ -162,13 +169,13 @@ router.post(
   '/logout',
   async (req: Request, res: Response, _next: NextFunction) => {
     try {
-      // ✅ access_token, refresh_token 쿠키 삭제
       res.clearCookie('access_token', {
         httpOnly: true,
         sameSite: 'lax',
         secure: (process.env.COOKIE_SECURE ?? 'false') === 'true',
         path: '/',
       });
+
       res.clearCookie('refresh_token', {
         httpOnly: true,
         sameSite: 'lax',
@@ -176,7 +183,7 @@ router.post(
         path: '/',
       });
 
-      return res.status(204).send(); // 내용 없는 성공 응답
+      return res.status(204).send();
     } catch (err) {
       console.error('로그아웃 에러:', err);
       return res.status(500).json({ message: '로그아웃 실패' });
