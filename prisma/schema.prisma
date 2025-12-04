@@ -182,8 +182,8 @@ model LifestyleSurvey {
   hotSensitivity  Boolean
 
   outgoingFreq    OutgoingFreq
-  mealPlace       MealPlace?
-  mealNote        String?
+  mealPlace       MealPlace
+  mealNote        String      @db.VarChar(15)
 
   gamingTime      GamingTime
   drinkFreq       DrinkFreq
@@ -191,7 +191,7 @@ model LifestyleSurvey {
   homeStyle       String[]
   hobbies         String[]
 
-  roommateWish    String
+  roommateWish    String      @db.VarChar(150)
   selfTags        String[]
 
   createdAt       DateTime @default(now())
