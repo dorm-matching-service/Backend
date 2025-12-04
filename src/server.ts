@@ -13,8 +13,8 @@ import cors from 'cors';
 
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-import lifestyleSurveyRoutes from './routes/lifestyleSurveyRoutes';
-import chatRoutes from './routes/chatRoutes';
+import lifestyleSurveyRoutes from './routes/lifestyleSurveyRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 
 import prisma from './db/prisma.js';
 
