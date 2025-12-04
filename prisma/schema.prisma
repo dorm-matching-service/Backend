@@ -21,6 +21,7 @@ model User {
   consent_privacy_version Int?
 
   sessions       Session[]
+  lifestyleSurvey LifestyleSurvey?   // 1:1 관계 역방향
   @@schema("public")
 
 
@@ -55,4 +56,146 @@ model VerificationCode {
   @@index([email, expires_at])
   @@schema("public")
   @@map("VerificationCode")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+
+  @@schema("public")
+}
+
+enum ShowerFreq {
+  ONCE
+  TWICE
+  TWO_DAYS
+  RARE
+
+  @@schema("public")
+}
+
+enum CleaningFreq {
+  ONCE
+  TWICE
+  TWO_DAYS
+  RARE
+
+  @@schema("public")
+}
+
+enum ActivityLevel {
+  SMOKER
+  NON_SMOKER
+
+  @@schema("public")
+}
+
+enum OutgoingFreq {
+  EVERY_WEEK
+  TWO_WEEKS
+  WEEKENDS
+  VACATION
+
+  @@schema("public")
+}
+
+enum MealPlace {
+  DORM
+  OUTSIDE
+
+  @@schema("public")
+}
+
+enum GamingTime {
+  NONE
+  ONE_MINUS
+  ONE_TO_THREE
+  THREE_PLUS
+
+  @@schema("public")
+}
+
+enum DrinkFreq {
+  NONE
+  RARE
+  ONE_TWO
+  THREE_PLUS
+
+  @@schema("public")
+}
+
+enum EI {
+  E
+  I
+
+  @@schema("public")
+}
+
+enum NS {
+  N
+  S
+
+  @@schema("public")
+}
+
+enum TF {
+  T
+  F
+
+  @@schema("public")
+}
+
+enum JP {
+  J
+  P
+
+  @@schema("public")
+}
+
+
+model LifestyleSurvey {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+
+  age             Int
+  department      String
+  gender          Gender
+
+  // MBTI 분리
+  mbti1           EI
+  mbti2           NS
+  mbti3           TF
+  mbti4           JP
+
+  // minutes
+  wakeTimeMinutes Int
+  sleepTimeMinutes Int
+
+  showerFreq      ShowerFreq
+  cleaningFreq    CleaningFreq
+
+  activityLevel   ActivityLevel
+
+  roomTraits      String[]    // 그대로 OK
+  coldSensitivity Boolean
+  hotSensitivity  Boolean
+
+  outgoingFreq    OutgoingFreq
+  mealPlace       MealPlace?
+  mealNote        String?
+
+  gamingTime      GamingTime
+  drinkFreq       DrinkFreq
+
+  homeStyle       String[]
+  hobbies         String[]
+
+  roommateWish    String
+  selfTags        String[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@schema("public")
 }
