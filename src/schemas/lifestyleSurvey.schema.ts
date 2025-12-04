@@ -65,4 +65,7 @@ export const lifestyleSurveySchema = z.object({
   selfTags: z.array(z.string()).default([]),
 });
 
+/* 부분 수정용 (PATCH) */
+export const lifestyleSurveyPartialSchema = lifestyleSurveySchema.partial();
+
 export type LifestyleSurveyInput = z.infer<typeof lifestyleSurveySchema>;
