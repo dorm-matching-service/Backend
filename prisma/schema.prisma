@@ -21,7 +21,11 @@ model User {
   consent_privacy_version Int?
 
   sessions       Session[]
-  lifestyleSurvey LifestyleSurvey?   // 1:1 관계 역방향
+
+  lifestyleSurvey LifestyleSurvey?   
+  chatMembers ChatMember[]
+  messages    Message[]
+  
   @@schema("public")
 
 
@@ -196,6 +200,44 @@ model LifestyleSurvey {
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@schema("public")
+}
+
+
+model ChatRoom {
+  id          String        @id @default(uuid())
+  created_at  DateTime      @default(now()) @db.Timestamptz(6)
+
+  members     ChatMember[]
+  messages    Message[]
+  @@schema("public")
+}
+
+model ChatMember {
+  id          String        @id @default(uuid())
+  room_id     String
+  user_id     String
+
+  // 나중에 "읽음 처리" 혹은 "마지막 읽은 메시지 ID" 넣을 수 있음
+  last_read_message_id String?
+
+  room        ChatRoom      @relation(fields: [room_id], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([room_id, user_id]) // 같은 방에 같은 유저 중복 방지
+  @@schema("public")
+}
+
+model Message {
+  id          String        @id @default(uuid())
+  room_id     String
+  sender_id   String
+  content     String
+  created_at  DateTime      @default(now()) @db.Timestamptz(6)
+
+  room        ChatRoom      @relation(fields: [room_id], references: [id], onDelete: Cascade)
+  sender      User          @relation(fields: [sender_id], references: [id])
 
   @@schema("public")
 }
