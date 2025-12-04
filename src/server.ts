@@ -14,6 +14,7 @@ import cors from 'cors';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import lifestyleSurveyRoutes from './routes/lifestyleSurveyRoutes';
+import chatRoutes from './routes/chatRoutes';
 
 import prisma from './db/prisma.js';
 
@@ -45,7 +46,7 @@ app.use(
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'], 
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
 
@@ -67,6 +68,7 @@ app.use('/auth/email/verify', otpLimiter);
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/api', lifestyleSurveyRoutes);
+app.use('/chat', chatRoutes);
 
 // 헬스 체크
 app.get('/health', (_req: Request, res: Response) => {
