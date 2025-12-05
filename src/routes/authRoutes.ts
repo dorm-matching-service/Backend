@@ -126,7 +126,7 @@ router.post(
         });
       }
 
-      // JWT 발급
+      // Access Token 발급
       const accessToken = signAccessToken({
         uid: user.id,
         email: user.email,
@@ -138,18 +138,18 @@ router.post(
         res.setHeader('x-debug-token', accessToken);
       }
 
-      // 쿠키 설정
-      res.cookie('access_token', accessToken, {
-        httpOnly: true,
-        secure: (process.env.COOKIE_SECURE ?? 'false') === 'true',
-        sameSite: 'lax',
-        maxAge: 1000 * 60 * 60,
-        path: '/',
-      });
+      // (선택) Refresh Token 발급 시 여기서 쿠키 설정
+      // res.cookie('refresh_token', refreshToken, {
+      //   httpOnly: true,
+      //   secure: true,
+      //   sameSite: 'lax',
+      //   path: '/auth/refresh',
+      // });
 
+      // 최종 응답: Access Token + 유저 기본 정보
       return res.json({
         ok: true,
-        message: '인증 성공',
+        access_token: accessToken,
         email: user.email,
         isNew,
       });
