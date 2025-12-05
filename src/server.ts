@@ -98,16 +98,10 @@ async function startServer() {
     await prisma.$connect();
     console.log('🟢 Prisma 및 DB 연결 성공!');
 
-    // 🔥 핵심 수정 → '0.0.0.0'으로 바인딩
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log('✅ 서버 실행 성공!');
-      console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
-      console.log('🔗 OTP endpoints:');
-      console.log(`   POST http://0.0.0.0:${PORT}/auth/email/start`);
-      console.log(`   POST http://0.0.0.0:${PORT}/auth/email/verify`);
-      console.log('🔗 User endpoints (JWT 보호):');
-      console.log(`   GET  http://0.0.0.0:${PORT}/users/me`);
-    });
+    console.log('🟢 Prisma 및 DB 연결 성공!');
+    console.log(
+      'Express 초기화 완료 — 실제 listen은 server.listen()에서 실행됩니다.',
+    );
   } catch (err) {
     console.error('🔴 Prisma 연결 실패:', err);
     process.exit(1);
@@ -131,5 +125,108 @@ function setupGracefulShutdown() {
 
 setupGracefulShutdown();
 startServer();
+
+import { Server } from 'socket.io';
+import http from 'http';
+import { verifyAccessToken } from './utils/jwt.js';
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+  },
+});
+
+//소켓이 연결되기 전에 반드시 먼저 실행되는 함수(Socket.IO 전용 미들웨어 등록 함수) - jwt 토큰 인증용
+io.use((socket, next) => {
+  // handshake는 소켓이 서버에 접속할 때 처음 보내는 “초기 요청 정보”이다.
+  //  auth: { token: "abc123" } 일 때 이 정보가 socket.handshake.auth에 들어간다.
+  const token = socket.handshake.auth.token;
+
+  if (!token) return next(new Error('NO_TOKEN'));
+
+  try {
+    const user = verifyAccessToken(token);
+    // 이렇게 입력되면 socket.data.user.uid 이러한 형태로 아래 로직에서 사용
+    socket.data.user = user; // 여기에 유저정보 저장
+    next();
+  } catch (err) {
+    //Socket.IO는 "next(error)" 를 호출하면 해당 소켓 연결을 거부하면
+    // 클라이언트에게 "connect_error" 이벤트로 에러 메시지 전달해준다.
+    //따라서 error 객체를 만들어 던져야한다.
+
+    next(new Error('INVALID_TOKEN'));
+  }
+});
+
+//연결 이벤트
+io.on('connection', (socket) => {
+  console.log('user connected:', socket.id);
+
+  //방 참여
+  socket.on('join_room', async (roomId) => {
+    const isMember = await prisma.chatMember.findFirst({
+      where: { room_id: roomId, user_id: socket.data.user.uid },
+    });
+
+    if (!isMember) return;
+
+    socket.join(roomId);
+  });
+
+  //메세지 전송
+  socket.on('send_message', async (data) => {
+    const message = await prisma.message.create({
+      data: {
+        room_id: data.roomId,
+        sender_id: socket.data.user.uid,
+        content: data.content,
+      },
+    });
+    io.to(data.roomId).emit('receive_message', message);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+  });
+
+  // 읽음처리
+  socket.on('read_message', async ({ roomId, messageId }) => {
+    const userId = socket.data.user.uid;
+
+    //db 업데이트
+    await prisma.chatMember.updateMany({
+      where: {
+        room_id: roomId,
+        user_id: userId,
+      },
+      data: {
+        last_read_message_id: messageId,
+      },
+    });
+    socket.to(roomId).emit('message_read', {
+      roomId,
+      userId,
+      messageId,
+    });
+  });
+});
+
+server.listen(PORT, '0.0.0.0', () =>
+  console.log(`🚀 Server running at http://0.0.0.0:${PORT}`),
+);
+
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+
+  try {
+    const payload = verifyAccessToken(token);
+    socket.data.user = payload; // 인증된 유저 정보 저장
+    next();
+  } catch {
+    next(new Error('Unauthorized'));
+  }
+});
 
 export default app; // (옵션) 테스트 용도
