@@ -11,15 +11,11 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
     // 1) Authorization 헤더 우선
     const authz = req.headers.authorization;
-    let token = authz?.startsWith('Bearer ')
-      ? authz.slice('Bearer '.length)
-      : undefined;
-
-    // 2) 없으면 httpOnly 쿠키에서
-    if (!token && req.cookies?.access_token) {
-      token = req.cookies.access_token;
+    if (!authz || !authz.startsWith('Bearer ')) {
+      return res.status(401).json({ message: '인증 필요' });
     }
-    if (!token) return res.status(401).json({ message: '인증 필요' });
+
+    const token = authz.slice('Bearer '.length);
 
     const decoded = verifyAccessToken(token);
     req.auth = decoded;
