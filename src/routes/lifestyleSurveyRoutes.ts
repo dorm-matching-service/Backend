@@ -1,6 +1,6 @@
 import express from 'express';
-import { LifestyleSurveyController } from '../controllers/lifestyleSurveyController';
-import { requireAuth } from '../middlewares/requireAuth';
+import { LifestyleSurveyController } from '../controllers/lifestyleSurveyController.js';
+import { requireAuth } from '../middlewares/requireAuth.js';
 
 const router = express.Router();
 
