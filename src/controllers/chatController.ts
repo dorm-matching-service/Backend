@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import prisma from '../db/prisma';
+import prisma from '../db/prisma.js';
 
 export const ChatController = {
   /* 메시지 조회 (페이지네이션) */
