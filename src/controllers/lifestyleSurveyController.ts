@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { LifestyleSurveyService } from '../services/LifestyleSurveyService';
+import { LifestyleSurveyService } from '../services/LifestyleSurveyService.js';
 
 import {
   lifestyleSurveySchema,
