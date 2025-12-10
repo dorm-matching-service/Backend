@@ -1,4 +1,4 @@
-import prisma from '../db/prisma';
+import prisma from '../db/prisma.js';
 
 export const LifestyleSurveyService = {
   /* 유저 설문조사 여부 조회 */
