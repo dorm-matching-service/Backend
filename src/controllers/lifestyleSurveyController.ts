@@ -4,7 +4,7 @@ import { LifestyleSurveyService } from '../services/LifestyleSurveyService.js';
 import {
   lifestyleSurveySchema,
   lifestyleSurveyPartialSchema,
-} from '../schemas/lifestyleSurvey.schema';
+} from '../schemas/lifestyleSurvey.schema.js';
 
 export const LifestyleSurveyController = {
   /* 유저 설문 여부 조회 */
