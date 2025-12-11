@@ -61,8 +61,8 @@ router.patch(
         message: '개인정보 수집 동의 완료',
         user: updatedUser,
       });
-    } catch (e) {
-      next(e);
+    } catch (error: any) {
+      console.log('서버에서 받은 에러:', error?.message);
     }
   },
 );
