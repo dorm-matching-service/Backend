@@ -126,6 +126,10 @@ router.post(
         });
       }
 
+      //인증 직후 개인정보 동의를 이미한 유저인지 확인
+      //!!는 “있으면 true, 없으면 false”로 만드는 boolean 캐스팅, 없을 때 undefined가 안나오게 처리하기 위함
+      const hasConsented = !!user?.consent_privacy;
+
       // Access Token 발급
       const accessToken = signAccessToken({
         uid: user.id,
@@ -152,6 +156,7 @@ router.post(
         access_token: accessToken,
         email: user.email,
         isNew,
+        hasConsented,
       });
     } catch (err) {
       if (err instanceof ZodError) {
