@@ -23,7 +23,7 @@ export const LifestyleSurveyService = {
       where: { userId: userId },
       update: data,
       create: {
-        user_id: userId,
+        userId: userId,
         ...data,
       },
     });
