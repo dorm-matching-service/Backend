@@ -11,8 +11,11 @@ export const LifestyleSurveyController = {
   getMySurvey: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = req.auth.uid;
-      const result = await LifestyleSurveyService.getMySurvey(userId);
-      return res.json(result);
+      const survey = await LifestyleSurveyService.getMySurvey(userId);
+      
+      return res.json({
+        hasChecklist: !!survey,
+      });
     } catch (error) {
       next(error);
     }

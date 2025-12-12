@@ -195,33 +195,3 @@ router.post(
     }
   },
 );
-
-router.get('/me', requireAuth, async (req, res) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.auth.uid },
-      select: {
-        id: true,
-        email: true,
-        email_verified: true,
-        consent_privacy: true,
-        consent_privacy_at: true,
-        consent_privacy_version: true,
-        created_at: true,
-        last_login: true,
-      },
-    });
-
-    if (!user) {
-      return res
-        .status(404)
-        .json({ ok: false, message: '유저가 존재하지 않습니다.' });
-    }
-
-    return res.json({ ok: true, user });
-  } catch (err) {
-    return res.status(500).json({ ok: false, message: '서버 오류' });
-  }
-});
-
-export default router;
