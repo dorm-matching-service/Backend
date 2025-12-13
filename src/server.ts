@@ -67,7 +67,7 @@ app.use('/auth/email/verify', otpLimiter);
 // 라우터 등록
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
-app.use('/api', lifestyleSurveyRoutes);
+app.use(lifestyleSurveyRoutes);
 app.use('/chat', chatRoutes);
 
 // 헬스 체크
