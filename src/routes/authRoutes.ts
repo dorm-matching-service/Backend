@@ -9,7 +9,7 @@ import prisma from '../db/prisma.js';
 import { generateNumericCode, hashCode, addMinutes } from '../utils/otp.js';
 import { sendOtpMail } from '../utils/mailer.js';
 import { signAccessToken } from '../utils/jwt.js';
-import { requireAuth } from '../middlewares/requireAuth.js';
+// import { requireAuth } from '../middlewares/requireAuth.js';
 
 const router = express.Router();
 
@@ -195,3 +195,5 @@ router.post(
     }
   },
 );
+
+export default router;
