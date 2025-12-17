@@ -25,6 +25,15 @@ model User {
   lifestyleSurvey LifestyleSurvey?   
   chatMembers ChatMember[]
   messages    Message[]
+
+  /** 내가 요청한 매칭 */
+  requestedMatches RoommateMatch[] @relation("RequesterMatches")
+
+  /** 내가 후보로 포함된 매칭 */
+  candidateMatches RoommateMatch[] @relation("CandidateMatches")
+
+  likesGiven    UserLike[] @relation("UserLikesFrom")
+  likesReceived UserLike[] @relation("UserLikesTo")
   
   @@schema("public")
 
@@ -238,6 +247,73 @@ model Message {
 
   room        ChatRoom      @relation(fields: [room_id], references: [id], onDelete: Cascade)
   sender      User          @relation(fields: [sender_id], references: [id])
+
+  @@schema("public")
+}
+
+
+enum MatchStatus {
+  PENDING    // 추천만 된 상태
+  ACCEPTED   // 요청자가 수락
+  REJECTED   // 요청자가 거절
+  EXPIRED    // 기간 만료
+  CONNECTED  // 채팅방 생성됨
+
+  @@schema("public")
+}
+
+model RoommateMatch {
+  id             String   @id @default(uuid())
+
+  /** 매칭 요청자 */
+  requesterId    String
+  requester      User     @relation("RequesterMatches", fields: [requesterId], references: [id])
+
+  /** 매칭 대상자 */
+  candidateId    String
+  candidate      User     @relation("CandidateMatches", fields: [candidateId], references: [id])
+
+  /** 점수 관련 */
+  baseScore      Float    // 0~100 (라이프스타일 점수)
+  finalScore     Float    // multiplier + bonus 적용 후
+  caseMultiplier Float
+  comboMultiplier Float
+  hobbyBonus     Float
+
+  /** 매칭 상태 */
+  status         MatchStatus @default(PENDING)
+
+  /** 메타 정보 */
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime?
+
+  @@unique([requesterId, candidateId])
+  @@index([requesterId])
+  @@index([candidateId])
+
+  @@schema("public")
+}
+
+model UserLike {
+  id        String   @id @default(uuid())
+
+  fromUserId String
+  toUserId   String
+
+  /** 찜한 사람 */
+  fromUser User @relation("UserLikesFrom", fields: [fromUserId], references: [id])
+
+  /** 찜 당한 사람 */
+  toUser   User @relation("UserLikesTo", fields: [toUserId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  /** 같은 사람이 같은 사람을 두 번 찜하지 못하게하는 중복 비허용을 위한 유니크 제약 조건 */
+  @@unique([fromUserId, toUserId])
+
+  /** index는 이 컬럼 기준으로 조회가 자주 일어날 것임을 명시 => 인덱스 있으면 조회 속도가 빨라짐 */
+  @@index([fromUserId])
+  @@index([toUserId])
 
   @@schema("public")
 }
