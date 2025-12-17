@@ -1,5 +1,5 @@
 import prisma from '../db/prisma.js';
-import { requireAuth } from '..//middlewares/requireAuth.js';
+import { requireAuth } from '../middlewares/requireAuth.js';
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 

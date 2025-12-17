@@ -11,10 +11,11 @@ import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
-import authRoutes from './routes/authRoutes.js';
-import userRoutes from './routes/userRoutes.js';
-import lifestyleSurveyRoutes from './routes/lifestyleSurveyRoutes.js';
-import chatRoutes from './routes/chatRoutes.js';
+import authRoutes from './routes/auth.routes.js';
+import userRoutes from './routes/user.routes.js';
+import lifestyleSurveyRoutes from './routes/lifestyleSurvey.routes.js';
+import chatRoutes from './routes/chat.routes.js';
+import matchingRoutes from './routes/matching.routes.js';
 
 import prisma from './db/prisma.js';
 
@@ -69,6 +70,7 @@ app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use(lifestyleSurveyRoutes);
 app.use('/chat', chatRoutes);
+app.use('/matching', matchingRoutes);
 
 // 헬스 체크
 app.get('/health', (_req: Request, res: Response) => {

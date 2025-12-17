@@ -3,10 +3,12 @@ import { getLayer2Score } from './layer2/index.js';
 import { getHobbyBonus } from './layer3/hobbyBonus.js';
 import { UserLifeStyle } from './types.js';
 
-
-export function getFinalMatchingScore(A: UserLifeStyle, B: UserLifeStyle): number {
+export function getFinalMatchingScore(
+  A: UserLifeStyle,
+  B: UserLifeStyle,
+): number {
   // Layer1 컷
-  if (!isLayer1Fail(A, B)) return 0;
+  if (isLayer1Fail(A, B)) return 0;
 
   // Layer2 (0 ~ 70)
   const layer2Score = getLayer2Score(A, B);
