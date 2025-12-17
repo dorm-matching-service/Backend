@@ -1,5 +1,5 @@
 import express from 'express';
-import { LifestyleSurveyController } from '../controllers/lifestyleSurveyController.js';
+import { LifestyleSurveyController } from '../controllers/lifestyleSurvey.controller.js';
 import { requireAuth } from '../middlewares/requireAuth.js';
 
 const router = express.Router();
