@@ -52,7 +52,7 @@ export const MatchingService = {
       if (!result) continue;
       if (result.finalScore < MIN_MATCH_SCORE) continue;
 
-      await prisma.roomateMatch.upsert({
+      await prisma.roommateMatch.upsert({
         create: {
           requesterId: userId,
           candidateId: B.userId,
