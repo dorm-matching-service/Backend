@@ -62,6 +62,7 @@ export const MatchingService = {
           },
           baseScore: result.baseScore,
           finalScore: result.finalScore,
+          hobbyBonus: result.hobbyBonus,
         },
       });
 
