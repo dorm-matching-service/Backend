@@ -47,12 +47,22 @@ export const MatchingService = {
     }[] = [];
 
     for (const B of candidates) {
-      const score = getFinalMatchingScore(A, B);
+      const result = getFinalMatchingScore(A, B);
 
-      if (score < MIN_MATCH_SCORE) continue;
+      if (!result) continue;
+      if (result.finalScore < MIN_MATCH_SCORE) continue;
+
+      await prisma.roomateMatch.upsert({
+        create: {
+          requesterId: userId,
+          candidateId: B.userId,
+          baseScore: result.baseScore,
+          finalScore: result.finalScore,
+        },
+      });
 
       results.push({
-        matchingScore: score,
+        matchingScore: result.finalScore,
         major: B.major,
         age: B.age,
         wakeTime: minutesToAmPm(B.wakeTimeMinutes),
