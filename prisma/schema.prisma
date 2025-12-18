@@ -276,8 +276,6 @@ model RoommateMatch {
   /** 점수 관련 */
   baseScore      Float    // 0~100 (라이프스타일 점수)
   finalScore     Float    // multiplier + bonus 적용 후
-  caseMultiplier Float
-  comboMultiplier Float
   hobbyBonus     Float
 
   /** 매칭 상태 */
