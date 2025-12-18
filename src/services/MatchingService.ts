@@ -16,11 +16,27 @@ export const MatchingService = {
     return survey;
   },
 
-  // 매칭 요청한 유저를 제외한 모든 유저의 체크리스트 조회
-  async getCandidateSurveys(excludeUserId: string) {
+  // 이미 매칭된 후보 ID 조회
+  async getAlreadyMatchedCandidateIds(userId: string): Promise<string[]> {
+    const matches = await prisma.roommateMatch.findMany({
+      where: { requesterId: userId },
+      select: { candidateId: true },
+    });
+
+    return matches.map((m) => m.candidateId);
+  },
+
+  // 후보 체크리스트 조회 (본인 + 이미 매칭된 후보 제외)
+  async getCandidateSurveys(
+    excludeUserId: string,
+    excludeCandidateIds: string[],
+  ) {
     const surveys = await prisma.lifestyleSurvey.findMany({
       where: {
-        userId: { not: excludeUserId },
+        userId: {
+          not: excludeUserId,
+          notIn: excludeCandidateIds,
+        },
       },
     });
 
@@ -34,8 +50,14 @@ export const MatchingService = {
   async runMatching(userId: string) {
     const MIN_MATCH_SCORE = 70;
 
+    // A 유저 설문
     const A = await this.getSurveyOrThrow(userId);
-    const candidates = await this.getCandidateSurveys(userId);
+
+    // 이미 매칭된 후보 ID
+    const excludeIds = await this.getAlreadyMatchedCandidateIds(userId);
+
+    // 새로운 후보만 조회
+    const candidates = await this.getCandidateSurveys(userId, excludeIds);
 
     const results: {
       matchingScore: number;
@@ -47,10 +69,26 @@ export const MatchingService = {
     }[] = [];
 
     for (const B of candidates) {
+      if (A.gender !== B.gender) {
+        console.log('❌ 성별 컷:', B.userId);
+        continue;
+      }
+
       const result = getFinalMatchingScore(A, B);
 
-      if (!result) continue;
-      if (result.finalScore < MIN_MATCH_SCORE) continue;
+      console.log('---- 후보 ----');
+      console.log('B.userId:', B.userId);
+      console.log('result:', result);
+
+      if (!result) {
+        console.log('❌ Layer1 컷');
+        continue;
+      }
+
+      if (result.finalScore < MIN_MATCH_SCORE) {
+        console.log('❌ 점수 미달:', result.finalScore);
+        continue;
+      }
 
       await prisma.roommateMatch.create({
         data: {
@@ -68,7 +106,7 @@ export const MatchingService = {
 
       results.push({
         matchingScore: result.finalScore,
-        major: B.major,
+        major: B.department,
         age: B.age,
         wakeTime: minutesToAmPm(B.wakeTimeMinutes),
         sleepTime: minutesToAmPm(B.sleepTimeMinutes),
