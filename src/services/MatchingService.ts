@@ -5,6 +5,55 @@ import { minutesToAmPm } from '../utils/time.js';
 type MatchingMode = 'normal' | 'relaxed';
 
 export const MatchingService = {
+
+  // 매칭 결과 조회 로직
+  async getMatchingStatus(userId: string) {
+    const matches = await prisma.roommateMatch.findMany({
+      where: {
+        requesterId: userId,
+      },
+      include: {
+        candidate: {
+          include: {
+            lifestyleSurvey: true,
+          },
+        },
+      },
+      orderBy: {
+        finalScore: "desc",
+      }
+    });
+
+    if (matches.length === 0) {
+      return {
+        hasResult: false,
+        count: 0,
+        results: [],
+      };
+    }
+
+    const results = matches.map((m) => {
+      const survey = m.candidate.lifestyleSurvey;
+      if (!survey) return null;
+
+      return{
+         matchingScore: Math.round(m.finalScore),
+        major: survey.department,
+        age: survey.age,
+        wakeTime: minutesToAmPm(survey.wakeTimeMinutes),
+        sleepTime: minutesToAmPm(survey.sleepTimeMinutes),
+        tags: survey.selfTags ?? [],
+      }
+    }).filter((x): x is NonNullable<typeof x> => x !== null);
+
+     return {
+      hasResult: true,
+      count: results.length,
+      results,
+    };
+  }
+
+
   // 매칭 요청한 유저의 ID로 체크리스트 정보 조회
   async getSurveyOrThrow(userId: string) {
     const survey = await prisma.lifestyleSurvey.findUnique({

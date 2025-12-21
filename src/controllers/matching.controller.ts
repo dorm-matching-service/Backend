@@ -27,4 +27,35 @@ export const matchingController = {
       next(error);
     }
   },
+
+  /* 매칭 결과 존재 여부 + 결과 조회 */
+  getMatchingStatus: async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const userId = req.auth?.uid;
+
+      if (!userId) {
+        return res.status(401).json({
+          message: 'Unauthorized',
+        });
+      }
+
+      const status = await MatchingService.getMatchingStatus(userId);
+
+      return res.json(status);
+      // 컨트롤러의 반환 타입 예시
+      /**
+       * {
+       *   hasResult: boolean,
+       *   count: number,
+       *   results: []
+       * }
+       */
+    } catch (error) {
+      next(error);
+    }
+  },
 };
