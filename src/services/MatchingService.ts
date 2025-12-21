@@ -1,16 +1,35 @@
 import prisma from '../db/prisma.js';
+
+import crypto from 'crypto';
+
 import { getFinalMatchingScore } from '../matching/getFinalMatchingScore.js';
 import { minutesToAmPm } from '../utils/time.js';
 
 type MatchingMode = 'normal' | 'relaxed';
 
 export const MatchingService = {
-
   // 매칭 결과 조회 로직
   async getMatchingStatus(userId: string) {
+    // 1. 가장 최근 매칭 시점
+    const latestBatch = await prisma.roommateMatch.findFirst({
+      where: { requesterId: userId },
+      orderBy: { createdAt: 'desc' },
+      select: { matchBatchId: true },
+    });
+
+    if (!latestBatch) {
+      return {
+        hasResult: false,
+        count: 0,
+        results: [],
+      };
+    }
+
+    // 2. 해당 batch의 매칭만 조회
     const matches = await prisma.roommateMatch.findMany({
       where: {
         requesterId: userId,
+        matchBatchId: latestBatch.matchBatchId,
       },
       include: {
         candidate: {
@@ -20,39 +39,32 @@ export const MatchingService = {
         },
       },
       orderBy: {
-        finalScore: "desc",
-      }
+        finalScore: 'desc',
+      },
     });
 
-    if (matches.length === 0) {
-      return {
-        hasResult: false,
-        count: 0,
-        results: [],
-      };
-    }
+    const results = matches
+      .map((m) => {
+        const survey = m.candidate.lifestyleSurvey;
+        if (!survey) return null;
 
-    const results = matches.map((m) => {
-      const survey = m.candidate.lifestyleSurvey;
-      if (!survey) return null;
+        return {
+          matchingScore: Math.round(m.finalScore),
+          major: survey.department,
+          age: survey.age,
+          wakeTime: minutesToAmPm(survey.wakeTimeMinutes),
+          sleepTime: minutesToAmPm(survey.sleepTimeMinutes),
+          tags: survey.selfTags ?? [],
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
 
-      return{
-         matchingScore: Math.round(m.finalScore),
-        major: survey.department,
-        age: survey.age,
-        wakeTime: minutesToAmPm(survey.wakeTimeMinutes),
-        sleepTime: minutesToAmPm(survey.sleepTimeMinutes),
-        tags: survey.selfTags ?? [],
-      }
-    }).filter((x): x is NonNullable<typeof x> => x !== null);
-
-     return {
-      hasResult: true,
+    return {
+      hasResult: results.length > 0,
       count: results.length,
       results,
     };
-  }
-
+  },
 
   // 매칭 요청한 유저의 ID로 체크리스트 정보 조회
   async getSurveyOrThrow(userId: string) {
@@ -100,6 +112,9 @@ export const MatchingService = {
   // 매칭 실행 로직
   async runMatching(userId: string, mode: MatchingMode) {
     const MIN_MATCH_SCORE = mode === 'relaxed' ? 60 : 70;
+
+    // 매칭 그룹화 ID 생성
+    const batchId = crypto.randomUUID();
 
     // A 유저 설문
     const A = await this.getSurveyOrThrow(userId);
@@ -152,6 +167,7 @@ export const MatchingService = {
           baseScore: result.baseScore,
           finalScore: result.finalScore,
           hobbyBonus: result.hobbyBonus,
+          matchBatchId: batchId, // 매칭 그룹화 ID
         },
       });
 
@@ -164,6 +180,11 @@ export const MatchingService = {
         tags: B.selfTags,
       });
     }
+
+    if (results.length === 0) {
+      return [];
+    }
+
     return results.sort((a, b) => b.matchingScore - a.matchingScore);
   },
 };

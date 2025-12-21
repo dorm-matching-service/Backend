@@ -281,6 +281,9 @@ model RoommateMatch {
   /** 매칭 상태 */
   status         MatchStatus @default(PENDING)
 
+  /** 매칭 그룹화 ID */
+  matchBatchId String
+
   /** 메타 정보 */
   createdAt      DateTime @default(now())
   expiresAt      DateTime?
