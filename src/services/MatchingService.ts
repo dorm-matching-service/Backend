@@ -78,10 +78,6 @@ export const MatchingService = {
 
       const result = getFinalMatchingScore(A, B);
 
-      if (!result) continue;
-
-      if (result.finalScore < MIN_MATCH_SCORE) continue;
-
       console.log('---- 후보 ----');
       console.log('B.userId:', B.userId);
       console.log('result:', result);
