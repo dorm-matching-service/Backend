@@ -2,6 +2,8 @@ import prisma from '../db/prisma.js';
 import { getFinalMatchingScore } from '../matching/getFinalMatchingScore.js';
 import { minutesToAmPm } from '../utils/time.js';
 
+type MatchingMode = 'normal' | 'relaxed';
+
 export const MatchingService = {
   // 매칭 요청한 유저의 ID로 체크리스트 정보 조회
   async getSurveyOrThrow(userId: string) {
@@ -47,8 +49,8 @@ export const MatchingService = {
   },
 
   // 매칭 실행 로직
-  async runMatching(userId: string) {
-    const MIN_MATCH_SCORE = 70;
+  async runMatching(userId: string, mode: MatchingMode) {
+    const MIN_MATCH_SCORE = mode === 'relaxed' ? 60 : 70;
 
     // A 유저 설문
     const A = await this.getSurveyOrThrow(userId);
@@ -75,6 +77,10 @@ export const MatchingService = {
       }
 
       const result = getFinalMatchingScore(A, B);
+
+      if (!result) continue;
+
+      if (result.finalScore < MIN_MATCH_SCORE) continue;
 
       console.log('---- 후보 ----');
       console.log('B.userId:', B.userId);
