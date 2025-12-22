@@ -63,6 +63,7 @@ router.patch(
       });
     } catch (error: any) {
       console.log('서버에서 받은 에러:', error?.message);
+      next(error);
     }
   },
 );

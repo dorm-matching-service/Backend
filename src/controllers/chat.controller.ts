@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { AuthenticatedRequest } from '../types/auth.js';
 import prisma from '../db/prisma.js';
 
 export const ChatController = {
@@ -26,7 +27,9 @@ export const ChatController = {
   /* 메시지 보내기 */
   sendMessage: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.auth.uid;
+      const { auth } = req as AuthenticatedRequest;
+      const userId = auth.uid;
+
       const { roomId, content } = req.body;
 
       const message = await prisma.message.create({
@@ -46,7 +49,9 @@ export const ChatController = {
   /* 읽음 처리 */
   readRoom: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.auth.uid;
+      const { auth } = req as AuthenticatedRequest;
+      const userId = auth.uid;
+
       const { roomId } = req.params;
       const { lastMessageId } = req.body;
 
@@ -69,7 +74,9 @@ export const ChatController = {
   /* 채팅방 생성 */
   createRoom: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.auth.uid;
+      const { auth } = req as AuthenticatedRequest;
+      const userId = auth.uid;
+
       const { opponentId } = req.body;
 
       // 방 존재 여부 체크

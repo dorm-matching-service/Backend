@@ -1,4 +1,3 @@
-import { isLayer1Fail } from './layer1/isLayer1Fail.js';
 import { getLayer2Score } from './layer2/index.js';
 import { getHobbyBonus } from './layer3/hobbyBonus.js';
 import { UserLifeStyle } from './types.js';

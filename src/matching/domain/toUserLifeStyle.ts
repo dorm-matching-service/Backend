@@ -1,8 +1,5 @@
 import { UserLifeStyle } from '../types.js';
-import type {
-  LifestyleSurvey,
-  GamingTime as PrismaGamingTime,
-} from '@prisma/client';
+import type { LifestyleSurvey } from '@prisma/client';
 
 import { CleanFreq } from '../layer2/CleanFreq.js';
 import { GamingTime } from '../layer2/GamingTime.js';
