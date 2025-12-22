@@ -1,4 +1,5 @@
 import prisma from '../db/prisma.js';
+import { MatchStatus } from '@prisma/client';
 
 import crypto from 'crypto';
 
@@ -7,6 +8,8 @@ import { getFinalMatchingScore } from '../matching/getFinalMatchingScore.js';
 import { minutesToAmPm } from '../utils/time.js';
 
 type MatchingMode = 'normal' | 'relaxed';
+
+import { addDays } from '../utils/date.js';
 
 export const MatchingService = {
   // 매칭 결과 조회 로직
@@ -112,6 +115,17 @@ export const MatchingService = {
 
   // 매칭 실행 로직
   async runMatching(userId: string, mode: MatchingMode) {
+    await prisma.roommateMatch.updateMany({
+      where: {
+        requesterId: userId,
+        status: MatchStatus.PENDING,
+        expiresAt: { lt: new Date() },
+      },
+      data: {
+        status: MatchStatus.EXPIRED,
+      },
+    });
+
     const MIN_MATCH_SCORE = mode === 'relaxed' ? 60 : 70;
 
     // 매칭 그룹화 ID 생성
@@ -126,6 +140,11 @@ export const MatchingService = {
     // 새로운 후보만 조회
     const candidates = await this.getCandidateSurveys(userId, excludeIds);
 
+    // DB에 저장할 create 작업들을 모아둘 배열 (트랜잭션 처리를 위한)
+    const createOperations: ReturnType<typeof prisma.roommateMatch.create>[] =
+      [];
+
+    // 매칭 API 응답용 타입
     const results: {
       matchingScore: number;
       major: string;
@@ -157,23 +176,29 @@ export const MatchingService = {
         continue;
       }
 
-      await prisma.roommateMatch.create({
-        data: {
-          requester: {
-            connect: { id: userId },
-          },
-          candidate: {
-            connect: { id: B.userId },
-          },
-          baseScore: result.baseScore,
-          finalScore: result.finalScore,
-          hobbyBonus: result.hobbyBonus,
-          matchBatchId: batchId, // 매칭 그룹화 ID
-        },
-      });
+      createOperations.push(
+        prisma.roommateMatch.create({
+          data: {
+            requester: {
+              connect: { id: userId },
+            },
+            candidate: {
+              connect: { id: B.userId },
+            },
+            baseScore: result.baseScore,
+            finalScore: result.finalScore,
+            hobbyBonus: result.hobbyBonus,
+            status: MatchStatus.PENDING,
+            expiresAt: addDays(new Date(), 7), // 매칭 데이터 생성 시간 기준 1주일 뒤에 만료
 
+            matchBatchId: batchId, // 매칭 그룹화 ID
+          },
+        }),
+      );
+
+      //응답 데이터는 메모리에서만 쌓음
       results.push({
-        matchingScore: result.finalScore,
+        matchingScore: Math.round(result.finalScore),
         major: B.department,
         age: B.age,
         wakeTime: minutesToAmPm(B.wakeTimeMinutes),
@@ -182,9 +207,13 @@ export const MatchingService = {
       });
     }
 
+    // 매칭 결과가 하나도 없으면 바로 종료
     if (results.length === 0) {
       return [];
     }
+
+    // 여기서 "한 번에" DB 반영
+    await prisma.$transaction(createOperations);
 
     return results.sort((a, b) => b.matchingScore - a.matchingScore);
   },
