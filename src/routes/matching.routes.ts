@@ -9,4 +9,9 @@ const router = express.Router();
  */
 router.get('/', requireAuth, matchingController.runMatching);
 
+/**
+ * 기존 매칭 결과 조회
+ */
+router.get('/status', requireAuth, matchingController.getMatchingStatus);
+
 export default router;
