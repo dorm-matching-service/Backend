@@ -2,8 +2,12 @@ import { CleanFreq } from './layer2/CleanFreq.js';
 import { GamingTime } from './layer2/GamingTime.js';
 import { MealPlace } from './layer2/MealPlace.js';
 import { HomeVisitFreq } from './layer2/HomeVisitFreq.js';
+import type { Gender } from '@prisma/client';
 
 export interface UserLifeStyle {
+  userId: string;
+
+  gender: Gender;
   /* ──────────────
    * Layer1 - 절대 조건
    * ────────────── */

@@ -1,20 +1,26 @@
 import prisma from '../db/prisma.js';
+import type { LifestyleSurvey } from '@prisma/client';
+
 import { MatchStatus } from '@prisma/client';
 
 import crypto from 'crypto';
 
 import { getFinalMatchingScore } from '../matching/getFinalMatchingScore.js';
+import { isLayer1Fail } from '../matching/layer1/isLayer1Fail.js';
 
 import { minutesToAmPm } from '../utils/time.js';
 
 type MatchingMode = 'normal' | 'relaxed';
+import { toUserLifeStyle } from '../matching/domain/toUserLifeStyle.js';
 
 import { addDays } from '../utils/date.js';
+
+import { UserLifeStyle } from '../matching/types.js';
 
 export const MatchingService = {
   // 매칭 결과 조회 로직
   async getMatchingStatus(userId: string) {
-    // 1. 가장 최근 매칭 시점
+    // 1. 가장 최근 매칭 시점 조회
     const latestBatch = await prisma.roommateMatch.findFirst({
       where: { requesterId: userId },
       orderBy: { createdAt: 'desc' },
@@ -47,12 +53,31 @@ export const MatchingService = {
       },
     });
 
+    // 후보 userId 목록 추출
+    const candidateUserIds = matches.map((m) => m.candidateId);
+
+    // 로그인 유저 → 후보들 좋아요 여부 조회 (한 번만)
+    const likes = await prisma.userLike.findMany({
+      where: {
+        fromUserId: userId, // 로그인 유저
+        toUserId: { in: candidateUserIds },
+      },
+      select: {
+        toUserId: true,
+      },
+    });
+
+    // 좋아요 여부 Set 생성
+    const likedUserIdSet = new Set(likes.map((like) => like.toUserId));
+
     const results = matches
       .map((m) => {
         const survey = m.candidate.lifestyleSurvey;
         if (!survey) return null;
 
         return {
+          userId: m.candidateId, // 상대 유저 UUID
+          isLiked: likedUserIdSet.has(m.candidateId), // 좋아요 여부
           matchingScore: Math.round(m.finalScore),
           major: survey.department,
           age: survey.age,
@@ -80,7 +105,7 @@ export const MatchingService = {
       throw new Error('No LifeStyleSurvey');
     }
 
-    return survey;
+    return toUserLifeStyle(survey);
   },
 
   // 이미 매칭된 후보 ID 조회
@@ -97,8 +122,8 @@ export const MatchingService = {
   async getCandidateSurveys(
     excludeUserId: string,
     excludeCandidateIds: string[],
-  ) {
-    const surveys = await prisma.lifestyleSurvey.findMany({
+  ): Promise<LifestyleSurvey[]> {
+    return prisma.lifestyleSurvey.findMany({
       where: {
         userId: {
           not: excludeUserId,
@@ -106,12 +131,18 @@ export const MatchingService = {
         },
       },
     });
-
-    //findMany의 반환값 타입은 항상 배열이므로 결과가 없으면 빈배열을 return한다
-    // throw new Error 작성하지 않아도 됨
-
-    return surveys;
   },
+
+  /* runMatching 전체 흐름
+      1. 후보 점수 계산
+      2. 상위 3명 추림
+      3. 후보 userId 배열 생성
+      4. 로그인 유저 기준 좋아요 한 후보들 조회
+      5. Set으로 변환
+      6. 응답 결과에 userId + isLiked 포함
+      7. DB 트랜잭션으로 매칭 저장
+      8. 프론트에 응답
+  */
 
   // 매칭 실행 로직
   async runMatching(userId: string, mode: MatchingMode) {
@@ -144,45 +175,54 @@ export const MatchingService = {
     const createOperations: ReturnType<typeof prisma.roommateMatch.create>[] =
       [];
 
-    // 점수 계산 결과만 임시로 모아둘 배열 (점수 높은 순서대로 3명 자르기 위함)
+    type Candidate = {
+      userId: string;
+      department: string;
+      age: number;
+      wakeTimeMinutes: number;
+      sleepTimeMinutes: number;
+      selfTags: string[] | null;
+      gender: string;
+    };
+
     const scoredCandidates: {
-      B: (typeof candidates)[number];
+      profile: Candidate; // 응답/표시용
+      lifeStyle: UserLifeStyle; // 매칭 계산용
       result: ReturnType<typeof getFinalMatchingScore>;
     }[] = [];
 
-    // 매칭 API 응답용 타입
-    const results: {
-      matchingScore: number;
-      major: string;
-      age: number;
-      wakeTime: string;
-      sleepTime: string;
-      tags: string[];
-    }[] = [];
+    for (const rawB of candidates) {
+      const lifeStyle = toUserLifeStyle(rawB); // ✅ 선언
 
-    for (const B of candidates) {
-      if (A.gender !== B.gender) {
-        console.log('❌ 성별 컷:', B.userId);
+      if (A.gender !== lifeStyle.gender) {
+        console.log('❌ 성별 컷:', lifeStyle.userId);
         continue;
       }
 
-      const result = getFinalMatchingScore(A, B);
-
-      console.log('---- 후보 ----');
-      console.log('B.userId:', B.userId);
-      console.log('result:', result);
-
-      if (!result) {
-        console.log('❌ Layer1 컷');
+      if (isLayer1Fail(A, lifeStyle)) {
+        console.log('❌ Layer1 컷:', lifeStyle.userId);
         continue;
       }
+
+      const result = getFinalMatchingScore(A, lifeStyle);
 
       if (result.finalScore < MIN_MATCH_SCORE) {
-        console.log('❌ 점수 미달:', result.finalScore);
         continue;
       }
 
-      scoredCandidates.push({ B, result });
+      scoredCandidates.push({
+        lifeStyle,
+        profile: {
+          userId: rawB.userId,
+          department: rawB.department,
+          age: rawB.age,
+          wakeTimeMinutes: rawB.wakeTimeMinutes,
+          sleepTimeMinutes: rawB.sleepTimeMinutes,
+          selfTags: rawB.selfTags,
+          gender: rawB.gender,
+        },
+        result,
+      });
     }
 
     // 상위 3명만 잘라서 후보에 넣기위한 상수 값
@@ -191,27 +231,65 @@ export const MatchingService = {
       .sort((a, b) => b.result.finalScore - a.result.finalScore)
       .slice(0, 3);
 
-    /* topCandidates 배열 형태 예시
+    // 매칭 결과가 하나도 없으면 바로 종료
+    if (topCandidates.length === 0) {
+      return [];
+    }
+
+    /* 
+          topCandidates 배열 형태 예시
             const topCandidates = [
-        {
-          B: { userId: 'u1', age: 23, department: '컴공', ... },
-          result: { baseScore: 70, finalScore: 92, hobbyBonus: 5 }
-        },
-        {
-          B: { userId: 'u2', age: 24, department: '전자', ... },
-          result: { baseScore: 68, finalScore: 91, hobbyBonus: 3 }
-        },
-        ...
-      ];
+          {
+            B: { userId: 'u1', age: 23, department: '컴공', ... },
+            result: { baseScore: 70, finalScore: 92, hobbyBonus: 5 }
+          },
+          {
+            B: { userId: 'u2', age: 24, department: '전자', ... },
+            result: { baseScore: 68, finalScore: 91, hobbyBonus: 3 }
+          },
+          ...
+        ];
         
       */
 
-    for (const { B, result } of topCandidates) {
+    // 후보 userId 목록
+    const candidateUserId = topCandidates
+      .map(({ profile }) => profile.userId)
+      .filter((id): id is string => Boolean(id));
+
+    // 로그인 유저 => 후보들 좋아요 여부 조회
+    const likes = await prisma.userLike.findMany({
+      where: {
+        fromUserId: userId, // 로그인 유저
+        toUserId: { in: candidateUserId },
+      },
+      select: {
+        toUserId: true,
+      },
+    });
+
+    // 좋아요 여부 Set으로 변환
+    const likedUserIdSet = new Set(likes.map((like) => like.toUserId));
+
+    // 매칭 API 응답용 타입
+    const results: {
+      userId: string; // 상대 userId (uuid)
+      isLiked: boolean; // 로그인한 유저가 상대 좋아요 여부
+      matchingScore: number;
+      major: string;
+      age: number;
+      wakeTime: string;
+      sleepTime: string;
+      tags: string[];
+    }[] = [];
+
+    for (const { profile, result } of topCandidates) {
+      // DB 저장용
       createOperations.push(
         prisma.roommateMatch.create({
           data: {
             requester: { connect: { id: userId } },
-            candidate: { connect: { id: B.userId } },
+            candidate: { connect: { id: profile.userId } },
             baseScore: result.baseScore,
             finalScore: result.finalScore,
             hobbyBonus: result.hobbyBonus,
@@ -221,23 +299,21 @@ export const MatchingService = {
           },
         }),
       );
-      //응답 데이터는 메모리에서만 쌓음
+
+      //응답 데이터
       results.push({
+        userId: profile.userId, // 상대 유저 UUID
+        isLiked: likedUserIdSet.has(profile.userId), // 좋아요 여부
         matchingScore: Math.round(result.finalScore),
-        major: B.department,
-        age: B.age,
-        wakeTime: minutesToAmPm(B.wakeTimeMinutes),
-        sleepTime: minutesToAmPm(B.sleepTimeMinutes),
-        tags: B.selfTags,
+        major: profile.department,
+        age: profile.age,
+        wakeTime: minutesToAmPm(profile.wakeTimeMinutes),
+        sleepTime: minutesToAmPm(profile.sleepTimeMinutes),
+        tags: profile.selfTags ?? [],
       });
     }
 
-    // 매칭 결과가 하나도 없으면 바로 종료
-    if (topCandidates.length === 0) {
-      return [];
-    }
-
-    // 여기서 "한 번에" DB 반영
+    // DB 트랜잭션 (DB에 반영하는 코드)
     await prisma.$transaction(createOperations);
 
     return results.sort((a, b) => b.matchingScore - a.matchingScore);

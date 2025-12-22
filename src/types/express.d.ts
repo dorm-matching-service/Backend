@@ -1,12 +1,12 @@
-declare namespace Express {
-  export interface Request {
+// src/types/express.d.ts
+import type { JwtDecoded } from '../utils/jwt.js';
+
+declare module 'express-serve-static-core' {
+  interface Request {
+    auth?: JwtDecoded;
     user?: {
       id: string;
       email: string;
-    };
-
-    auth?: {
-      uid: string; // requireAuth 미들웨어에서 넣는 값
     };
   }
 }

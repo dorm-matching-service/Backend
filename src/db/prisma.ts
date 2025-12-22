@@ -1,4 +1,4 @@
-// src/db/prisma.ts
+// src/db/
 // 1) .env를 *가장 먼저* 로드
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
