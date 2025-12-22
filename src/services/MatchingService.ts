@@ -144,6 +144,12 @@ export const MatchingService = {
     const createOperations: ReturnType<typeof prisma.roommateMatch.create>[] =
       [];
 
+    // 점수 계산 결과만 임시로 모아둘 배열 (점수 높은 순서대로 3명 자르기 위함)
+    const scoredCandidates: {
+      B: (typeof candidates)[number];
+      result: ReturnType<typeof getFinalMatchingScore>;
+    }[] = [];
+
     // 매칭 API 응답용 타입
     const results: {
       matchingScore: number;
@@ -176,26 +182,45 @@ export const MatchingService = {
         continue;
       }
 
+      scoredCandidates.push({ B, result });
+    }
+
+    // 상위 3명만 잘라서 후보에 넣기위한 상수 값
+    // 원본 배열을 변형하지 않기 위해 복사 후 정렬 함
+    const topCandidates = [...scoredCandidates]
+      .sort((a, b) => b.result.finalScore - a.result.finalScore)
+      .slice(0, 3);
+
+    /* topCandidates 배열 형태 예시
+            const topCandidates = [
+        {
+          B: { userId: 'u1', age: 23, department: '컴공', ... },
+          result: { baseScore: 70, finalScore: 92, hobbyBonus: 5 }
+        },
+        {
+          B: { userId: 'u2', age: 24, department: '전자', ... },
+          result: { baseScore: 68, finalScore: 91, hobbyBonus: 3 }
+        },
+        ...
+      ];
+        
+      */
+
+    for (const { B, result } of topCandidates) {
       createOperations.push(
         prisma.roommateMatch.create({
           data: {
-            requester: {
-              connect: { id: userId },
-            },
-            candidate: {
-              connect: { id: B.userId },
-            },
+            requester: { connect: { id: userId } },
+            candidate: { connect: { id: B.userId } },
             baseScore: result.baseScore,
             finalScore: result.finalScore,
             hobbyBonus: result.hobbyBonus,
             status: MatchStatus.PENDING,
             expiresAt: addDays(new Date(), 7), // 매칭 데이터 생성 시간 기준 1주일 뒤에 만료
-
-            matchBatchId: batchId, // 매칭 그룹화 ID
+            matchBatchId: batchId,
           },
         }),
       );
-
       //응답 데이터는 메모리에서만 쌓음
       results.push({
         matchingScore: Math.round(result.finalScore),
@@ -208,7 +233,7 @@ export const MatchingService = {
     }
 
     // 매칭 결과가 하나도 없으면 바로 종료
-    if (results.length === 0) {
+    if (topCandidates.length === 0) {
       return [];
     }
 
