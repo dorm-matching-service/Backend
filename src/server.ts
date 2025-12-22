@@ -16,6 +16,7 @@ import userRoutes from './routes/user.routes.js';
 import lifestyleSurveyRoutes from './routes/lifestyleSurvey.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import matchingRoutes from './routes/matching.routes.js';
+import likeRoutes from './routes/like.routes.js';
 
 import prisma from './db/prisma.js';
 
@@ -71,6 +72,7 @@ app.use('/users', userRoutes);
 app.use(lifestyleSurveyRoutes);
 app.use('/chat', chatRoutes);
 app.use('/matching', matchingRoutes);
+app.use('/likes', likeRoutes);
 
 // 헬스 체크
 app.get('/health', (_req: Request, res: Response) => {
