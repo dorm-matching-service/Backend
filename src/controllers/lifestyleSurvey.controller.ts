@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { LifestyleSurveyService } from '../services/LifestyleSurveyService.js';
+import { AuthenticatedRequest } from '../types/auth.js';
 
 import {
   lifestyleSurveySchema,
@@ -10,7 +11,9 @@ export const LifestyleSurveyController = {
   /* 유저 설문 여부 조회 */
   getMySurvey: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.auth.uid;
+      const { auth } = req as AuthenticatedRequest;
+      const userId = auth.uid;
+
       const survey = await LifestyleSurveyService.getMySurvey(userId);
       return res.json({ hasChecklist: survey.exists });
     } catch (error) {
@@ -29,7 +32,9 @@ export const LifestyleSurveyController = {
       console.log('body:', req.body);
       console.log('==============================');
 
-      const userId = req.auth.uid;
+      const { auth } = req as AuthenticatedRequest;
+      const userId = auth.uid;
+
       const data = lifestyleSurveySchema.parse(req.body);
       const result = await LifestyleSurveyService.upsertSurvey(userId, data);
       return res.json(result);
@@ -41,7 +46,9 @@ export const LifestyleSurveyController = {
   /* 유저 설문 부분 수정 (PATCH) */
   patchSurvey: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.auth.uid;
+      const { auth } = req as AuthenticatedRequest;
+      const userId = auth.uid;
+
       const data = lifestyleSurveyPartialSchema.parse(req.body);
       const result = await LifestyleSurveyService.patchSurvey(userId, data);
       return res.json(result);
