@@ -7,20 +7,26 @@ declare module 'express-serve-static-core' {
   }
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export function requireAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): asserts req is Request & { auth: JwtDecoded } {
   try {
-    // 1) Authorization 헤더 우선
+    // Authorization 헤더 우선
     const authz = req.headers.authorization;
     if (!authz || !authz.startsWith('Bearer ')) {
-      return res.status(401).json({ message: '인증 필요' });
+      res.status(401).json({ message: '인증 필요' });
+      return;
     }
 
     const token = authz.slice('Bearer '.length);
-
     const decoded = verifyAccessToken(token);
+
     req.auth = decoded;
     next();
   } catch {
-    return res.status(401).json({ message: '토큰이 유효하지 않습니다.' });
+    res.status(401).json({ message: '토큰이 유효하지 않습니다.' });
+    return;
   }
 }

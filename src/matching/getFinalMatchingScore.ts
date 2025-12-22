@@ -13,9 +13,6 @@ export function getFinalMatchingScore(
   A: UserLifeStyle,
   B: UserLifeStyle,
 ): FinalMatchingResult {
-  // Layer1 컷
-  if (isLayer1Fail(A, B)) return null;
-
   // Layer2 (0 ~ 70)
   const baseScore = getLayer2Score(A, B);
 

@@ -8,6 +8,11 @@ export const LikeController = {
       const fromUserId = req.auth?.uid;
       const { toUserId } = req.body;
 
+      if (!fromUserId) {
+        return res.status(401).json({
+          message: '인증 정보가 없습니다.',
+        });
+      }
       if (!toUserId) {
         return res.status(400).json({
           message: 'toUserId는 필수입니다.',
