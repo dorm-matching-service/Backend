@@ -83,7 +83,7 @@ export const LikeService = {
       const survey = like.toUser.lifestyleSurvey;
 
       return {
-        userId: like.toUser.id,
+        targetUserId: like.toUser.id,
         isLiked: true,
 
         major: survey?.department ?? '',
