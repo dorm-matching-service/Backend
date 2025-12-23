@@ -318,4 +318,92 @@ export const MatchingService = {
 
     return results.sort((a, b) => b.matchingScore - a.matchingScore);
   },
+
+  // 과거 매칭 기록 조회 (최근 batch 제외 + REJECTED 제외)
+  async getPastMatchingHistory(userId: string) {
+    // 가장 최근 매칭 batch 조회
+    const latestBatch = await prisma.roommateMatch.findFirst({
+      where: { requesterId: userId },
+      orderBy: { createdAt: 'desc' },
+      select: { matchBatchId: true },
+    });
+
+    // 매칭 자체가 한 번도 없으면 바로 종료
+    if (!latestBatch) {
+      return [];
+    }
+
+    // 과거 매칭 조회 (최근 batch 제외 + REJECTED 제외)
+    const matches = await prisma.roommateMatch.findMany({
+      where: {
+        requesterId: userId,
+        matchBatchId: {
+          not: latestBatch.matchBatchId, // 최근 매칭 제외
+        },
+        status: {
+          not: MatchStatus.REJECTED, // 유저가 거절한 매칭 제외
+        },
+      },
+      include: {
+        candidate: {
+          select: {
+            id: true,
+            lifestyleSurvey: {
+              select: {
+                age: true,
+                department: true,
+                wakeTimeMinutes: true,
+                sleepTimeMinutes: true,
+                selfTags: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (matches.length === 0) {
+      return [];
+    }
+
+    // 찜 여부 조회
+    const candidateUserIds = matches.map((m) => m.candidateId);
+
+    const likes = await prisma.userLike.findMany({
+      where: {
+        fromUserId: userId,
+        toUserId: { in: candidateUserIds },
+      },
+      select: {
+        toUserId: true,
+      },
+    });
+
+    const likedUserIdSet = new Set(likes.map((like) => like.toUserId));
+
+    // 찜 목록과 동일한 return 타입
+    return matches.map((m) => {
+      const survey = m.candidate.lifestyleSurvey;
+
+      return {
+        targetUserId: m.candidate.id,
+        isLiked: likedUserIdSet.has(m.candidate.id),
+
+        major: survey?.department ?? '',
+        age: survey?.age ?? 0,
+        wakeTime:
+          survey?.wakeTimeMinutes != null
+            ? minutesToAmPm(survey.wakeTimeMinutes)
+            : '',
+        sleepTime:
+          survey?.sleepTimeMinutes != null
+            ? minutesToAmPm(survey.sleepTimeMinutes)
+            : '',
+        tags: survey?.selfTags ?? [],
+      };
+    });
+  },
 };

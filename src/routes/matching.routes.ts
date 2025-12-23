@@ -14,4 +14,9 @@ router.get('/', requireAuth, matchingController.runMatching);
  */
 router.get('/status', requireAuth, matchingController.getMatchingStatus);
 
+/**
+ * 지난 매칭 기록 조회
+ */
+router.get('/history', requireAuth, matchingController.getPastMatchingCards);
+
 export default router;
