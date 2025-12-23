@@ -84,4 +84,25 @@ export const matchingController = {
       next(error);
     }
   },
+
+  // 과거 매칭 횟수 조회
+  getPastMatchingCount: async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const userId = req.auth?.uid;
+
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const count = await MatchingService.getPastMatchingCount(userId);
+
+      return res.json({ count });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
