@@ -169,31 +169,31 @@ router.post(
   },
 );
 
-/** 3) 로그아웃 */
-router.post(
-  '/logout',
-  async (req: Request, res: Response, _next: NextFunction) => {
-    try {
-      res.clearCookie('access_token', {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: (process.env.COOKIE_SECURE ?? 'false') === 'true',
-        path: '/',
-      });
+// /** 3) 로그아웃 */
+// router.post(
+//   '/logout',
+//   async (req: Request, res: Response, _next: NextFunction) => {
+//     try {
+//       res.clearCookie('access_token', {
+//         httpOnly: true,
+//         sameSite: 'lax',
+//         secure: (process.env.COOKIE_SECURE ?? 'false') === 'true',
+//         path: '/',
+//       });
 
-      res.clearCookie('refresh_token', {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: (process.env.COOKIE_SECURE ?? 'false') === 'true',
-        path: '/',
-      });
+//       res.clearCookie('refresh_token', {
+//         httpOnly: true,
+//         sameSite: 'lax',
+//         secure: (process.env.COOKIE_SECURE ?? 'false') === 'true',
+//         path: '/',
+//       });
 
-      return res.status(204).send();
-    } catch (err) {
-      console.error('로그아웃 에러:', err);
-      return res.status(500).json({ message: '로그아웃 실패' });
-    }
-  },
-);
+//       return res.status(204).send();
+//     } catch (err) {
+//       console.error('로그아웃 에러:', err);
+//       return res.status(500).json({ message: '로그아웃 실패' });
+//     }
+//   },
+// );
 
 export default router;

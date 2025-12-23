@@ -58,4 +58,30 @@ export const matchingController = {
       next(error);
     }
   },
+
+  /* 지난 매칭 기록 조회 (최근 batch 제외 + REJECTED 제외) */
+  getPastMatchingCards: async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const userId = req.auth?.uid;
+
+      if (!userId) {
+        return res.status(401).json({
+          message: 'Unauthorized',
+        });
+      }
+
+      const results = await MatchingService.getPastMatchingHistory(userId);
+
+      return res.json({
+        count: results.length,
+        results,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
