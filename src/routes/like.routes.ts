@@ -14,4 +14,9 @@ router.post('/toggle', requireAuth, LikeController.toggleLike);
  */
 router.get('/me/count', requireAuth, LikeController.getMyLikeCount);
 
+/**
+ * 내가 찜한 유저 카드 목록 조회 기능
+ */
+router.get('/cards', requireAuth, LikeController.getMyLikedCards);
+
 export default router;
