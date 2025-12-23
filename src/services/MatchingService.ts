@@ -17,6 +17,27 @@ import { addDays } from '../utils/date.js';
 
 import { UserLifeStyle } from '../matching/types.js';
 
+async function getPastMatchingHistoryBase(userId: string) {
+  const latestBatch = await prisma.roommateMatch.findFirst({
+    where: { requesterId: userId },
+    orderBy: { createdAt: 'desc' },
+    select: { matchBatchId: true },
+  });
+
+  if (!latestBatch) {
+    return [];
+  }
+
+  return prisma.roommateMatch.findMany({
+    where: {
+      requesterId: userId,
+      matchBatchId: { not: latestBatch.matchBatchId },
+      status: { not: MatchStatus.REJECTED },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
 export const MatchingService = {
   // 매칭 결과 조회 로직
   async getMatchingStatus(userId: string) {
@@ -322,27 +343,13 @@ export const MatchingService = {
   // 과거 매칭 기록 조회 (최근 batch 제외 + REJECTED 제외)
   async getPastMatchingHistory(userId: string) {
     // 가장 최근 매칭 batch 조회
-    const latestBatch = await prisma.roommateMatch.findFirst({
-      where: { requesterId: userId },
-      orderBy: { createdAt: 'desc' },
-      select: { matchBatchId: true },
-    });
+    const matches = await getPastMatchingHistoryBase(userId);
+    if (matches.length === 0) return [];
 
-    // 매칭 자체가 한 번도 없으면 바로 종료
-    if (!latestBatch) {
-      return [];
-    }
-
-    // 과거 매칭 조회 (최근 batch 제외 + REJECTED 제외)
-    const matches = await prisma.roommateMatch.findMany({
+    // candidate + survey 정보 다시 조회 (기존 구조 유지)
+    const detailedMatches = await prisma.roommateMatch.findMany({
       where: {
-        requesterId: userId,
-        matchBatchId: {
-          not: latestBatch.matchBatchId, // 최근 매칭 제외
-        },
-        status: {
-          not: MatchStatus.REJECTED, // 유저가 거절한 매칭 제외
-        },
+        id: { in: matches.map((m) => m.id) },
       },
       include: {
         candidate: {
@@ -365,12 +372,8 @@ export const MatchingService = {
       },
     });
 
-    if (matches.length === 0) {
-      return [];
-    }
-
     // 찜 여부 조회
-    const candidateUserIds = matches.map((m) => m.candidateId);
+    const candidateUserIds = detailedMatches.map((m) => m.candidateId);
 
     const likes = await prisma.userLike.findMany({
       where: {
@@ -385,7 +388,7 @@ export const MatchingService = {
     const likedUserIdSet = new Set(likes.map((like) => like.toUserId));
 
     // 찜 목록과 동일한 return 타입
-    return matches.map((m) => {
+    return detailedMatches.map((m) => {
       const survey = m.candidate.lifestyleSurvey;
 
       return {
@@ -405,5 +408,11 @@ export const MatchingService = {
         tags: survey?.selfTags ?? [],
       };
     });
+  },
+
+  // 과거 매칭 횟수 조회 (최근 batch 제외 + REJECTED 제외)
+  async getPastMatchingCount(userId: string) {
+    const matches = await getPastMatchingHistoryBase(userId);
+    return matches.length;
   },
 };
