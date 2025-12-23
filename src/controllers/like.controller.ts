@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { LikeService } from '../services/like.service.js';
+import { AuthenticatedRequest } from '../types/auth.js';
 
 export const LikeController = {
   /* 좋아요 토글 기능 */
@@ -41,6 +42,19 @@ export const LikeController = {
       const result = await LikeService.getMyLikeCount(fromUserId);
 
       return res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /* 내가 찜한 유저 카드 목록 조회 */
+  getMyLikedCards: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { auth } = req as AuthenticatedRequest;
+      const userId = auth.uid;
+      const cards = await LikeService.getMyLikedCards(userId);
+
+      return res.json(cards);
     } catch (error) {
       next(error);
     }
