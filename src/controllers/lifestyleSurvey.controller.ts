@@ -14,8 +14,11 @@ export const LifestyleSurveyController = {
       const { auth } = req as AuthenticatedRequest;
       const userId = auth.uid;
 
-      const survey = await LifestyleSurveyService.getMySurvey(userId);
-      return res.json({ hasChecklist: survey.exists });
+      const result = await LifestyleSurveyService.getMySurvey(userId);
+      return res.json({
+        exists: result.exists,
+        survey: result.exists ? result.survey : null,
+      });
     } catch (error) {
       next(error);
     }
