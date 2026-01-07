@@ -59,4 +59,22 @@ export const LifestyleSurveyController = {
       next(error);
     }
   },
+
+  /* 유저 설문 요약 조회 */
+  getMySurveySummary: async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const { auth } = req as AuthenticatedRequest;
+      const userId = auth.uid;
+
+      const result = await LifestyleSurveyService.getMySurveySummary(userId);
+
+      return res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
 };

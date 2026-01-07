@@ -25,4 +25,10 @@ router.patch(
   LifestyleSurveyController.patchSurvey,
 );
 
+router.get(
+  '/me/summary',
+  requireAuth,
+  LifestyleSurveyController.getMySurveySummary,
+);
+
 export default router;

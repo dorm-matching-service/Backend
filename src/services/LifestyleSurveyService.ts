@@ -57,4 +57,30 @@ export const LifestyleSurveyService = {
       survey,
     };
   },
+
+  /* 로그인한 유저의 설문 요약 정보 조회 */
+  async getMySurveySummary(userId: string) {
+    const survey = await prisma.lifestyleSurvey.findUnique({
+      where: { userId },
+      select: {
+        age: true,
+        department: true,
+        wakeTimeMinutes: true,
+        sleepTimeMinutes: true,
+        selfTags: true,
+      },
+    });
+
+    if (!survey) {
+      return {
+        exists: false,
+        survey: null,
+      };
+    }
+
+    return {
+      exists: true,
+      survey,
+    };
+  },
 };
