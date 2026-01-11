@@ -73,6 +73,11 @@ export const LikeService = {
             },
           },
         },
+        match: {
+          select: {
+            finalScore: true, // or matchingScore
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -83,7 +88,7 @@ export const LikeService = {
       const survey = like.toUser.lifestyleSurvey;
 
       return {
-        targetUserId: like.toUser.id,
+        userId: like.toUser.id,
         isLiked: true,
 
         major: survey?.department ?? '',
