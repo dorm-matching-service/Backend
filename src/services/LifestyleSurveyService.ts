@@ -1,5 +1,6 @@
 import prisma from '../db/prisma.js';
-import { Prisma } from '@prisma/client';
+import { minutesToAmPm } from '../utils/time.js';
+import type { LifestyleSurveyPatchDTO } from '../types/LifestyleSurvey.js';
 
 export const LifestyleSurveyService = {
   /* 유저 설문조사 여부 조회 */
@@ -19,18 +20,12 @@ export const LifestyleSurveyService = {
   },
 
   /* 유저당 설문조사 한 개 생성 원칙 기반 => create or update (upsert 방식) */
-  async upsertSurvey(
-    userId: string,
-    //data 안에 **userId가 “있을 수도 있고 없을 수도 있다”**고 타입으로 허용
-    data:
-      | Prisma.LifestyleSurveyUncheckedCreateInput
-      | Omit<Prisma.LifestyleSurveyUncheckedCreateInput, 'userId'>,
-  ) {
+  async upsertSurvey(userId: string, data: LifestyleSurveyPatchDTO) {
     const survey = await prisma.lifestyleSurvey.upsert({
-      where: { userId: userId },
+      where: { userId },
       update: data,
       create: {
-        userId: userId,
+        userId,
         ...data,
       },
     });
@@ -41,14 +36,9 @@ export const LifestyleSurveyService = {
     };
   },
 
-  async patchSurvey(
-    userId: string,
-    data:
-      | Prisma.LifestyleSurveyUncheckedUpdateInput
-      | Omit<Prisma.LifestyleSurveyUncheckedUpdateInput, 'userId'>,
-  ) {
+  async patchSurvey(userId: string, data: LifestyleSurveyPatchDTO) {
     const survey = await prisma.lifestyleSurvey.update({
-      where: { userId: userId },
+      where: { userId },
       data,
     });
 
@@ -60,7 +50,7 @@ export const LifestyleSurveyService = {
 
   /* 로그인한 유저의 설문 요약 정보 조회 */
   async getMySurveySummary(userId: string) {
-    const survey = await prisma.lifestyleSurvey.findUnique({
+    const rawSurvey = await prisma.lifestyleSurvey.findUnique({
       where: { userId },
       select: {
         age: true,
@@ -71,12 +61,24 @@ export const LifestyleSurveyService = {
       },
     });
 
-    if (!survey) {
+    if (!rawSurvey) {
       return {
         exists: false,
         survey: null,
       };
     }
+
+    const survey = {
+      age: rawSurvey.age,
+      department: rawSurvey.department,
+      wakeTime: rawSurvey.wakeTimeMinutes
+        ? minutesToAmPm(rawSurvey.wakeTimeMinutes)
+        : null,
+      sleepTime: rawSurvey.sleepTimeMinutes
+        ? minutesToAmPm(rawSurvey.sleepTimeMinutes)
+        : null,
+      tags: rawSurvey.selfTags,
+    };
 
     return {
       exists: true,
