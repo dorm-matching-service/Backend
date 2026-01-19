@@ -392,7 +392,7 @@ export const MatchingService = {
       const survey = m.candidate.lifestyleSurvey;
 
       return {
-        targetUserId: m.candidate.id,
+        userId: m.candidate.id,
         isLiked: likedUserIdSet.has(m.candidate.id),
 
         major: survey?.department ?? '',
