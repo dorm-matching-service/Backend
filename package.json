@@ -8,6 +8,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "postinstall": "prisma generate",
     "build": "tsc",
     "start": "node dist/server.js",
     "prisma:pull": "node prisma/ipv4.js && prisma db pull"
