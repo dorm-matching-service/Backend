@@ -1,4 +1,5 @@
 import prisma from '../db/prisma.js';
+import type { Prisma } from '@prisma/client';
 import { minutesToAmPm } from '../utils/time.js';
 
 export const LifestyleSurveyService = {
