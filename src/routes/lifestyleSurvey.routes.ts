@@ -27,7 +27,7 @@ router.patch(
 
 /* 4) 유저 설문 요약 조회 */
 router.get(
-  '/me/summary',
+  '/lifestyle-survey/me/summary',
   requireAuth,
   LifestyleSurveyController.getMySurveySummary,
 );
