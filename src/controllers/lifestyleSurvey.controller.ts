@@ -80,13 +80,20 @@ export const LifestyleSurveyController = {
   /* 특정 유저 설문 전체 조회 (프로필 상세용) */
   getUserSurvey: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { userId } = req.params;
+      const { auth } = req as AuthenticatedRequest;
+      const userId = auth.uid;
 
-      const result = await LifestyleSurveyService.getSurveyByUserId(userId);
+      const { targetUserId } = req.params;
+
+      const result = await LifestyleSurveyService.getSurveyByUserId(
+        userId,
+        targetUserId,
+      );
 
       return res.json({
         exists: result.exists,
         survey: result.exists ? result.survey : null,
+        isLiked: result.isLiked,
       });
     } catch (error) {
       next(error);
