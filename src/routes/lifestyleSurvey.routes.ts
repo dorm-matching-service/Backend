@@ -35,6 +35,7 @@ router.get(
 /* 5) 유저 설문 전체 조회 */
 router.get(
   '/lifestyle-survey/profile/:targetUserId/survey',
+  requireAuth,
   LifestyleSurveyController.getUserSurvey,
 );
 export default router;
