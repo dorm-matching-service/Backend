@@ -77,4 +77,19 @@ export const LifestyleSurveyController = {
       next(error);
     }
   },
+  /* 특정 유저 설문 전체 조회 (프로필 상세용) */
+  getUserSurvey: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { userId } = req.params;
+
+      const result = await LifestyleSurveyService.getSurveyByUserId(userId);
+
+      return res.json({
+        exists: result.exists,
+        survey: result.exists ? result.survey : null,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
