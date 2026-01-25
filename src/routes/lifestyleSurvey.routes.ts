@@ -34,7 +34,7 @@ router.get(
 
 /* 5) 유저 설문 전체 조회 */
 router.get(
-  '/lifestyle-survey/profiles/:targetUserId/survey',
+  '/lifestyle-survey/profile/:targetUserId/survey',
   LifestyleSurveyController.getUserSurvey,
 );
 export default router;
