@@ -96,8 +96,10 @@ export const LifestyleSurveyService = {
       survey,
     };
   },
-  /* 특정 유저의 설문 전체 조회 (프로필 상세용) */
-  async getSurveyByUserId(targetUserId: string) {
+
+  /* 특정 유저의 설문 전체 조회 + 찜 여부 조회 (프로필 상세용) */
+  async getSurveyByUserId(targetUserId: string, userId: string) {
+    // 설문 전체 조회
     const survey = await prisma.lifestyleSurvey.findUnique({
       where: { userId: targetUserId },
     });
@@ -106,12 +108,23 @@ export const LifestyleSurveyService = {
       return {
         exists: false,
         survey: null,
+        isLiked: false,
       };
     }
+
+    // 좋아요 여부 조회 (viewer → target)
+    const like = await prisma.userLike.findFirst({
+      where: {
+        fromUserId: userId,
+        toUserId: targetUserId,
+      },
+      select: { id: true },
+    });
 
     return {
       exists: true,
       survey,
+      isLiked: Boolean(like),
     };
   },
 };
