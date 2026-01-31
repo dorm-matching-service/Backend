@@ -95,6 +95,18 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 // 포트 설정
 const PORT = Number(process.env.PORT) || 3001;
 
+import { Server } from 'socket.io';
+import http from 'http';
+import { verifyAccessToken } from './utils/jwt.js';
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+  },
+});
+
 // 서버 시작 전 Prisma 연결 확인
 async function startServer() {
   try {
@@ -102,10 +114,9 @@ async function startServer() {
     await prisma.$connect();
     console.log('🟢 Prisma 및 DB 연결 성공!');
 
-    console.log('🟢 Prisma 및 DB 연결 성공!');
-    console.log(
-      'Express 초기화 완료 — 실제 listen은 server.listen()에서 실행됩니다.',
-    );
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
+    });
   } catch (err) {
     console.error('🔴 Prisma 연결 실패:', err);
     process.exit(1);
@@ -126,21 +137,6 @@ function setupGracefulShutdown() {
   process.on('SIGINT', () => void shutdown('SIGINT'));
   process.on('SIGTERM', () => void shutdown('SIGTERM'));
 }
-
-setupGracefulShutdown();
-startServer();
-
-import { Server } from 'socket.io';
-import http from 'http';
-import { verifyAccessToken } from './utils/jwt.js';
-
-const server = http.createServer(app);
-
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-  },
-});
 
 //소켓이 연결되기 전에 반드시 먼저 실행되는 함수(Socket.IO 전용 미들웨어 등록 함수) - jwt 토큰 인증용
 io.use((socket, next) => {
@@ -217,20 +213,5 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, '0.0.0.0', () =>
-  console.log(`🚀 Server running at http://0.0.0.0:${PORT}`),
-);
-
-io.use((socket, next) => {
-  const token = socket.handshake.auth?.token;
-
-  try {
-    const payload = verifyAccessToken(token);
-    socket.data.user = payload; // 인증된 유저 정보 저장
-    next();
-  } catch {
-    next(new Error('Unauthorized'));
-  }
-});
-
-export default app; // (옵션) 테스트 용도
+setupGracefulShutdown();
+startServer();
