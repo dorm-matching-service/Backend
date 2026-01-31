@@ -98,7 +98,7 @@ export const LifestyleSurveyService = {
   },
 
   /* 특정 유저의 설문 전체 조회 + 찜 여부 조회 (프로필 상세용) */
-  async getSurveyByUserId(targetUserId: string, userId: string) {
+  async getSurveyByUserId(userId: string, targetUserId: string) {
     // 설문 전체 조회
     const survey = await prisma.lifestyleSurvey.findUnique({
       where: { userId: targetUserId },
