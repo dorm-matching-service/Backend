@@ -432,6 +432,23 @@ export const MatchingService = {
       },
     });
 
+    // 채팅방 존재 여부
+    const chatRoom = await prisma.chatRoom.findFirst({
+      where: {
+        members: {
+          some: { user_id: userId },
+        },
+        AND: {
+          members: {
+            some: { user_id: opponentId },
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    const hasChatRoom = Boolean(chatRoom);
+
     // 매칭 기록 자체가 없는 경우
     if (!match) {
       return {
@@ -439,6 +456,7 @@ export const MatchingService = {
         hasRequested: false,
         canRespond: false,
         canRequest: true,
+        hasChatRoom,
       };
     }
 
@@ -452,6 +470,7 @@ export const MatchingService = {
       hasRequested: isPending && isRequester,
       canRespond: isPending && !isRequester,
       canRequest: false,
+      hasChatRoom,
     };
   },
 };
