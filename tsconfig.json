@@ -10,10 +10,11 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "prisma"],
+  "include": ["src/**/*"],
 
   "exclude": [
     "node_modules",
+    "prisma",
     "dist",
     "test/**",
     "**/*.spec.ts",
