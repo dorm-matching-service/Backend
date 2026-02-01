@@ -100,13 +100,35 @@ export const ChatController = {
         return res.json({ roomId: exist.room_id });
       }
 
-      // 방 생성
-      const room = await prisma.chatRoom.create({
-        data: {
-          members: {
-            create: [{ user_id: userId }, { user_id: opponentId }],
-          },
+      // 유저 A-B 관계 찾기
+      const match = await prisma.roommateMatch.findFirst({
+        where: {
+          OR: [
+            { requesterId: userId, candidateId: opponentId },
+            { requesterId: opponentId, candidateId: userId },
+          ],
         },
+      });
+
+      const room = await prisma.$transaction(async (tx) => {
+        //채팅방 생성
+        const room = await tx.chatRoom.create({
+          data: {
+            members: {
+              create: [{ user_id: userId }, { user_id: opponentId }],
+            },
+          },
+        });
+
+        //관계 상태 CONNECTED로 변경
+        if (match && match.status !== 'CONNECTED') {
+          await tx.roommateMatch.update({
+            where: { id: match.id },
+            data: { status: 'CONNECTED' },
+          });
+        }
+
+        return room;
       });
 
       return res.json({ roomId: room.id });

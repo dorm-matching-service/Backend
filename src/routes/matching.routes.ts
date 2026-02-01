@@ -22,3 +22,10 @@ router.get('/history', requireAuth, matchingController.getPastMatchingCards);
 // 과거 매칭 횟수
 router.get('/past/count', requireAuth, matchingController.getPastMatchingCount);
 export default router;
+
+// 매칭 status 조회
+router.get(
+  '/:opponentId/status',
+  requireAuth,
+  matchingController.getMatchStatusWithUser,
+);

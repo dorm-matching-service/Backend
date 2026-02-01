@@ -415,4 +415,21 @@ export const MatchingService = {
     const matches = await getPastMatchingHistoryBase(userId);
     return matches.length;
   },
+
+  // services/MatchingService.ts
+  getMatchStatusWithUser: async (userId: string, opponentId: string) => {
+    const match = await prisma.roommateMatch.findFirst({
+      where: {
+        OR: [
+          { requesterId: userId, candidateId: opponentId },
+          { requesterId: opponentId, candidateId: userId },
+        ],
+      },
+      select: {
+        status: true,
+      },
+    });
+
+    return match?.status ?? null;
+  },
 };
