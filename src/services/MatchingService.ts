@@ -457,6 +457,7 @@ export const MatchingService = {
         canRespond: false,
         canRequest: true,
         hasChatRoom,
+        chatRoomId: chatRoom?.id ?? null,
       };
     }
 
@@ -471,6 +472,7 @@ export const MatchingService = {
       canRespond: isPending && !isRequester,
       canRequest: false,
       hasChatRoom,
+      chatRoomId: chatRoom?.id ?? null,
     };
   },
 };
