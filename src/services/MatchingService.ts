@@ -427,9 +427,31 @@ export const MatchingService = {
       },
       select: {
         status: true,
+        requesterId: true,
+        candidateId: true,
       },
     });
 
-    return match?.status ?? null;
+    // 매칭 기록 자체가 없는 경우
+    if (!match) {
+      return {
+        matchStatus: null,
+        hasRequested: false,
+        canRespond: false,
+        canRequest: true,
+      };
+    }
+
+    // 요청 보낸 사람과 로그인 유저가 동일한지
+    const isRequester = match.requesterId === userId;
+    // 아직 처리되지 않은 상태인가
+    const isPending = match.status === MatchStatus.PENDING;
+
+    return {
+      matchStatus: match.status,
+      hasRequested: isPending && isRequester,
+      canRespond: isPending && !isRequester,
+      canRequest: false,
+    };
   },
 };
