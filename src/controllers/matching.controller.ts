@@ -105,4 +105,29 @@ export const matchingController = {
       next(error);
     }
   },
+
+  /* 특정 상대와의 매칭 상태 조회 */
+  getMatchStatusWithUser: async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const userId = req.auth?.uid;
+      const { opponentId } = req.params;
+
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const status = await MatchingService.getMatchStatusWithUser(
+        userId,
+        opponentId,
+      );
+
+      return res.json({ status });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

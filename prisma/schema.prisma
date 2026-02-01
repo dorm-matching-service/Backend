@@ -253,7 +253,7 @@ model Message {
 
 
 enum MatchStatus {
-  PENDING    // 추천만 된 상태
+  PENDING    // 요청을 보냈고, 상대 응답 대기
   ACCEPTED   // 요청자가 수락
   REJECTED   // 요청자가 거절
   EXPIRED    // 기간 만료
