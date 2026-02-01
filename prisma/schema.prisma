@@ -279,7 +279,7 @@ model RoommateMatch {
   hobbyBonus     Float
 
   /** 매칭 상태 */
-  status         MatchStatus @default(PENDING)
+  status         MatchStatus
 
   /** 매칭 그룹화 ID */
   matchBatchId String
