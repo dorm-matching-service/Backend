@@ -125,7 +125,7 @@ export const matchingController = {
         opponentId,
       );
 
-      return res.json({ status });
+      return res.json(status);
     } catch (error) {
       next(error);
     }
