@@ -107,6 +107,8 @@ const io = new Server(server, {
   },
 });
 
+app.set('io', io);
+
 // 서버 시작 전 Prisma 연결 확인
 async function startServer() {
   try {
