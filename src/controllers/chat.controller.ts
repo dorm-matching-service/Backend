@@ -32,6 +32,23 @@ export const ChatController = {
 
       const { roomId, content } = req.body;
 
+      if (!roomId || !content?.trim()) {
+        return res.status(400).json({ message: '잘못된 요청' });
+      }
+
+      // 유저 검증
+      const isMember = await prisma.chatMember.findFirst({
+        where: {
+          room_id: roomId,
+          user_id: userId,
+        },
+      });
+
+      if (!isMember) {
+        return res.status(403).json({ message: '채팅방 접근 권한 없음' });
+      }
+
+      // 메세지 생성
       const message = await prisma.message.create({
         data: {
           room_id: roomId,
@@ -39,6 +56,9 @@ export const ChatController = {
           content,
         },
       });
+
+      // 실시간 전달
+      req.app.get('io').to(roomId).emit('receive_message', message);
 
       return res.json(message);
     } catch (error) {
@@ -63,6 +83,11 @@ export const ChatController = {
         data: {
           last_read_message_id: lastMessageId,
         },
+      });
+      // 상대에게 읽음 알림
+      req.app.get('io').to(roomId).emit('message_read', {
+        userId,
+        lastMessageId,
       });
 
       return res.json({ ok: true });
