@@ -28,10 +28,14 @@ export const ChatController = {
   sendMessage: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { auth } = req as AuthenticatedRequest;
+      if (!auth?.uid) {
+        return res.status(401).json({ message: '인증 필요' });
+      }
+
       const userId = auth.uid;
 
-      const { roomId, content } = req.body;
-
+      const { roomId } = req.params;
+      const { content } = req.body;
       if (!roomId || !content?.trim()) {
         return res.status(400).json({ message: '잘못된 요청' });
       }
