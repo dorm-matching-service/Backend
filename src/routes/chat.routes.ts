@@ -11,7 +11,7 @@ router.post('/rooms', requireAuth, ChatController.createRoom);
 router.get('/rooms/:roomId/messages', requireAuth, ChatController.getMessages);
 
 /** 3) 메시지 보내기 */
-router.post('/messages', requireAuth, ChatController.sendMessage);
+router.post('/messages/:roomId', requireAuth, ChatController.sendMessage);
 
 /** 4) 읽음 처리 */
 router.patch('/rooms/:roomId/read', requireAuth, ChatController.readRoom);
