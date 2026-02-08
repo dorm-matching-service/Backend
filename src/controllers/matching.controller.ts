@@ -130,4 +130,78 @@ export const matchingController = {
       next(error);
     }
   },
+  /**
+   * 내가 받은 룸메 요청 목록 조회
+   * GET /roommate-matches/received
+   */
+  getReceivedRequests: async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const userId = req.auth?.uid;
+
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const requests = await MatchingService.getReceivedRequests(userId);
+
+      return res.json({
+        count: requests.length,
+        requests,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * 룸메 요청 수락
+   * POST /roommate-matches/:matchId/accept
+   */
+  acceptRequest: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.auth?.uid;
+      const { matchId } = req.params;
+
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      await MatchingService.acceptRequest(matchId, userId);
+
+      return res.json({
+        success: true,
+        message: '룸메 요청을 수락했습니다.',
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * 룸메 요청 거절
+   * POST /roommate-matches/:matchId/reject
+   */
+  rejectRequest: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.auth?.uid;
+      const { matchId } = req.params;
+
+      if (!userId) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      await MatchingService.rejectRequest(matchId, userId);
+
+      return res.json({
+        success: true,
+        message: '룸메 요청을 거절했습니다.',
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
