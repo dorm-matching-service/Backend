@@ -29,3 +29,21 @@ router.get(
   requireAuth,
   matchingController.getMatchStatusWithUser,
 );
+
+/**
+ * 내가 받은 룸메 요청 목록 조회
+ * GET /matches/received
+ */
+router.get('/received', requireAuth, matchingController.getReceivedRequests);
+
+/**
+ * 룸메 요청 수락
+ * POST /matches/:matchId/accept
+ */
+router.post('/:matchId/accept', requireAuth, matchingController.acceptRequest);
+
+/**
+ * 룸메 요청 거절
+ * POST /matches/:matchId/reject
+ */
+router.post('/:matchId/reject', requireAuth, matchingController.rejectRequest);

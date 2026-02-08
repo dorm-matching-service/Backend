@@ -416,7 +416,10 @@ export const MatchingService = {
     return matches.length;
   },
 
-  // services/MatchingService.ts
+  /**
+   * 내가 받은 룸메 요청 목록 조회
+   * (candidateId = 나, status = PENDING)
+   */
   getMatchStatusWithUser: async (userId: string, opponentId: string) => {
     const match = await prisma.roommateMatch.findFirst({
       where: {
@@ -474,5 +477,106 @@ export const MatchingService = {
       hasChatRoom,
       chatRoomId: chatRoom?.id ?? null,
     };
+  },
+
+  async getReceivedRequests(userId: string) {
+    const requests = await prisma.roommateMatch.findMany({
+      where: {
+        candidateId: userId,
+        status: MatchStatus.PENDING,
+      },
+      include: {
+        requester: {
+          select: {
+            id: true,
+            lifestyleSurvey: {
+              select: {
+                age: true,
+                department: true,
+                selfTags: true,
+                wakeTimeMinutes: true,
+                sleepTimeMinutes: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return requests.map((r) => ({
+      matchId: r.id,
+      createdAt: r.createdAt,
+      requester: {
+        userId: r.requester.id,
+        age: r.requester.lifestyleSurvey?.age ?? null,
+        department: r.requester.lifestyleSurvey?.department ?? '',
+        tags: r.requester.lifestyleSurvey?.selfTags ?? [],
+      },
+    }));
+  },
+
+  /**
+   * 룸메 요청 수락
+   */
+  async acceptRequest(matchId: string, userId: string) {
+    const match = await prisma.roommateMatch.findUnique({
+      where: { id: matchId },
+    });
+
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // 요청 받은 사람만 수락 가능
+    if (match.candidateId !== userId) {
+      throw new Error('Forbidden');
+    }
+
+    if (match.status !== MatchStatus.PENDING) {
+      throw new Error('Invalid match status');
+    }
+
+    await prisma.roommateMatch.update({
+      where: { id: matchId },
+      data: {
+        status: MatchStatus.ACCEPTED,
+      },
+    });
+
+    return { success: true };
+  },
+
+  /**
+   * 룸메 요청 거절
+   */
+  async rejectRequest(matchId: string, userId: string) {
+    const match = await prisma.roommateMatch.findUnique({
+      where: { id: matchId },
+    });
+
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // 요청 받은 사람만 거절 가능
+    if (match.candidateId !== userId) {
+      throw new Error('Forbidden');
+    }
+
+    if (match.status !== MatchStatus.PENDING) {
+      throw new Error('Invalid match status');
+    }
+
+    await prisma.roommateMatch.update({
+      where: { id: matchId },
+      data: {
+        status: MatchStatus.REJECTED,
+      },
+    });
+
+    return { success: true };
   },
 };
