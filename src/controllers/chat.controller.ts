@@ -165,6 +165,7 @@ export const ChatController = {
       next(error);
     }
   },
+
   /* 내가 속한 채팅방 목록 조회 */
   getMyChatRooms: async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -189,6 +190,12 @@ export const ChatController = {
                     select: {
                       id: true,
                       email: true,
+                      lifestyleSurvey: {
+                        select: {
+                          age: true,
+                          department: true,
+                        },
+                      },
                     },
                   },
                 },
@@ -214,6 +221,7 @@ export const ChatController = {
           if (!opponentMember) return null;
 
           const opponent = opponentMember.user;
+          const survey = opponent.lifestyleSurvey;
 
           const lastMessage = room.messages[0] ?? null;
 
@@ -247,6 +255,8 @@ export const ChatController = {
             opponent: {
               id: opponent.id,
               email: opponent.email,
+              age: survey?.age ?? null,
+              department: survey?.department ?? null,
             },
 
             lastMessage: lastMessage
