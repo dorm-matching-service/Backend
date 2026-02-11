@@ -16,4 +16,7 @@ router.post('/messages/:roomId', requireAuth, ChatController.sendMessage);
 /** 4) 읽음 처리 */
 router.patch('/rooms/:roomId/read', requireAuth, ChatController.readRoom);
 
+/** 5) 내가 속한 채팅방 목록 조회 */
+router.get('/rooms', requireAuth, ChatController.getMyChatRooms);
+
 export default router;
