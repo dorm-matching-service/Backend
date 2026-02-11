@@ -165,4 +165,109 @@ export const ChatController = {
       next(error);
     }
   },
+  /* 내가 속한 채팅방 목록 조회 */
+  getMyChatRooms: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { auth } = req as AuthenticatedRequest;
+
+      if (!auth?.uid) {
+        return res.status(401).json({ message: '인증 필요' });
+      }
+
+      const userId = auth.uid;
+
+      const chatMembers = await prisma.chatMember.findMany({
+        where: {
+          user_id: userId,
+        },
+        include: {
+          room: {
+            include: {
+              members: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      email: true,
+                    },
+                  },
+                },
+              },
+              messages: {
+                orderBy: {
+                  created_at: 'desc',
+                },
+                take: 1,
+              },
+            },
+          },
+        },
+      });
+
+      const rooms = await Promise.all(
+        chatMembers.map(async (member) => {
+          const room = member.room;
+
+          // 상대 찾기
+          const opponentMember = room.members.find((m) => m.user_id !== userId);
+
+          if (!opponentMember) return null;
+
+          const opponent = opponentMember.user;
+
+          const lastMessage = room.messages[0] ?? null;
+
+          // unreadCount 계산
+          const unreadCount = await prisma.message.count({
+            where: {
+              room_id: room.id,
+              sender_id: {
+                not: userId,
+              },
+              ...(member.last_read_message_id && {
+                created_at: {
+                  gt: (
+                    await prisma.message.findUnique({
+                      where: {
+                        id: member.last_read_message_id,
+                      },
+                      select: {
+                        created_at: true,
+                      },
+                    })
+                  )?.created_at,
+                },
+              }),
+            },
+          });
+
+          return {
+            roomId: room.id,
+
+            opponent: {
+              id: opponent.id,
+              email: opponent.email,
+            },
+
+            lastMessage: lastMessage
+              ? {
+                  id: lastMessage.id,
+                  content: lastMessage.content,
+                  createdAt: lastMessage.created_at,
+                }
+              : null,
+
+            unreadCount,
+          };
+        }),
+      );
+
+      return res.json({
+        count: rooms.filter(Boolean).length,
+        rooms: rooms.filter(Boolean),
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
