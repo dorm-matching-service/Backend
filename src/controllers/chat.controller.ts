@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { formatChatTime } from '../utils/formatChatTIme.js';
 import { AuthenticatedRequest } from '../types/auth.js';
 import prisma from '../db/prisma.js';
 
@@ -263,7 +264,7 @@ export const ChatController = {
               ? {
                   id: lastMessage.id,
                   content: lastMessage.content,
-                  createdAt: lastMessage.created_at,
+                  createdAt: formatChatTime(lastMessage.created_at),
                 }
               : null,
 
