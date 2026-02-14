@@ -5,6 +5,7 @@ export const UserService = {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
+        id: true,
         email: true,
       },
     });
